@@ -1,7 +1,4 @@
-# Hive MCP Server
-
-[![smithery badge](https://smithery.ai/badge/@gluneau/hive-mcp-server)](https://smithery.ai/server/@gluneau/hive-mcp-server)
-[![glama badge](https://glama.ai/mcp/servers/pobodojvqv/badge)](https://glama.ai/mcp/servers/pobodojvqv)
+# Hive MCP
 
 A comprehensive MCP server that enables AI assistants to interact with the Hive blockchain and Hive Engine sidechain through the Model Context Protocol. Built with [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) for modern, type-safe blockchain interactions.
 
@@ -201,7 +198,7 @@ This server provides a bridge between AI assistants (like Claude) and the Hive e
 The MCP Inspector provides an interactive interface for testing and debugging the server:
 
 ```bash
-npx @modelcontextprotocol/inspector npx @gluneau/hive-mcp-server
+npx @modelcontextprotocol/inspector npx @jarvie/hive-mcp
 ```
 
 ### Authentication Configuration
@@ -237,7 +234,7 @@ To use this server with Claude Desktop:
   "mcpServers": {
     "hive": {
       "command": "npx",
-      "args": ["-y", "@gluneau/hive-mcp-server"],
+      "args": ["-y", "@jarvie/hive-mcp"],
       "env": {
         "HIVE_USERNAME": "your-hive-username",
         "HIVE_POSTING_KEY": "your-hive-posting-private-key",
@@ -254,7 +251,7 @@ To use this server with Claude Desktop:
 The same JSON configuration works for Windsurf (in `windsurf_config.json`) and for Cursor (in `~/.cursor/mcp.json` for version >= 0.47).
 
 In previous versions, you'll have to use the 1 line command format in the MCP section of the Settings:
-`env HIVE_USERNAME=your-hive-username env HIVE_POSTING_KEY=your-hive-posting-private-key env HIVE_ACTIVE_KEY=your-hive-active-private-key env HIVE_MEMO_KEY=your-hive-memo-private-key npx -y @gluneau/hive-mcp-server`
+`env HIVE_USERNAME=your-hive-username env HIVE_POSTING_KEY=your-hive-posting-private-key env HIVE_ACTIVE_KEY=your-hive-active-private-key env HIVE_MEMO_KEY=your-hive-memo-private-key npx -y @jarvie/hive-mcp`
 
 ## Examples
 
@@ -383,6 +380,17 @@ npm run build
 ## Tool Reference
 
 For detailed parameter documentation for all 84 tools, see [docs/TOOLS.md](docs/TOOLS.md).
+
+## Acknowledgments
+
+This project was originally created by [Gregory Luneau (@gluneau)](https://github.com/gluneau/hive-mcp-server) using the @hiveio/dhive library. The codebase has been extensively rewritten by [@jarvie](https://github.com/scottjarvie) to use the modern [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) library and expanded from 17 to 84 tools, adding comprehensive support for:
+
+- Social features (follow, mute, reblog)
+- Community interactions
+- DeFi operations (staking, savings, conversions)
+- Resource Credits management
+- Hive Engine (tokens, NFTs, market, liquidity pools)
+- Multi-node failover for reliability
 
 ## License
 

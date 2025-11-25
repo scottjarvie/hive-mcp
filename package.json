@@ -1,9 +1,9 @@
 {
-  "name": "@gluneau/hive-mcp-server",
+  "name": "@jarvie/hive-mcp",
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.0.3",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
@@ -19,9 +19,9 @@
     "test:crypto": "jest tests/tools/crypto.test.ts --config jest.config.cjs",
     "test:integration": "jest tests/integration.test.ts --config jest.config.cjs"
   },
-  "author": "gregory.luneau@gmail.com",
+  "author": "jarvie@peakd.com",
   "license": "ISC",
-  "description": "An MCP server that enables AI assistants to interact with the Hive blockchain",
+  "description": "An MCP server that enables AI assistants to interact with the Hive blockchain - 84 tools for accounts, content, social, DeFi, and Hive Engine",
   "dependencies": {
     "@hiveio/wax": "^1.27.6-rc1",
     "@modelcontextprotocol/sdk": "^1.6.1",
@@ -59,26 +59,29 @@
     "social-media",
     "dapp",
     "blockchain-api",
-    "steem",
+    "defi",
+    "hive-engine",
+    "nft",
     "llm",
     "ai-tools",
     "claude-ai",
     "anthropic",
-    "hiveio"
+    "hiveio",
+    "peakd"
   ],
   "files": [
     "dist"
   ],
   "bin": {
-    "hive-mcp-server": "dist/index.js"
+    "hive-mcp": "dist/index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gluneau/hive-mcp-server.git"
+    "url": "git+https://github.com/scottjarvie/hive-mcp.git"
   },
-  "homepage": "https://github.com/gluneau/hive-mcp-server#readme",
+  "homepage": "https://github.com/scottjarvie/hive-mcp#readme",
   "bugs": {
-    "url": "https://github.com/gluneau/hive-mcp-server/issues"
+    "url": "https://github.com/scottjarvie/hive-mcp/issues"
   },
   "types": "./dist/index.d.ts"
 }
