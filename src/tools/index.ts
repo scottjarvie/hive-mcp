@@ -21,6 +21,10 @@ import * as socialTools from './social.js';
 import * as communityTools from './community.js';
 import * as contentAdvancedTools from './content-advanced.js';
 import * as resourceCreditsTools from './resource-credits.js';
+import * as stakingTools from './staking.js';
+import * as rewardsTools from './rewards.js';
+import * as savingsTools from './savings.js';
+import * as conversionsTools from './conversions.js';
 import { adaptHandler } from '../utils/response.js';
 import * as promptsTools from './prompts.js';
 
@@ -327,5 +331,125 @@ export function registerTools(server: McpServer): void {
     'Delegate Resource Credits to another Hive account',
     schemas.delegateRcSchema,
     adaptHandler(resourceCreditsTools.delegateRc)
+  );
+
+  // =========================================================================
+  // DeFi Tools (Phase 4)
+  // =========================================================================
+
+  // Staking tools
+  server.tool(
+    'power_up',
+    'Convert HIVE to Hive Power (HP) - stake HIVE to gain governance power',
+    schemas.powerUpSchema,
+    adaptHandler(stakingTools.powerUp)
+  );
+
+  server.tool(
+    'power_down',
+    'Start power down to convert HP to liquid HIVE (13-week process)',
+    schemas.powerDownSchema,
+    adaptHandler(stakingTools.powerDown)
+  );
+
+  server.tool(
+    'cancel_power_down',
+    'Cancel an ongoing power down process',
+    schemas.cancelPowerDownSchema,
+    adaptHandler(stakingTools.cancelPowerDown)
+  );
+
+  server.tool(
+    'delegate_hp',
+    'Delegate Hive Power to another account',
+    schemas.delegateHpSchema,
+    adaptHandler(stakingTools.delegateHp)
+  );
+
+  server.tool(
+    'undelegate_hp',
+    'Remove HP delegation from an account (5-day cooldown)',
+    schemas.undelegateHpSchema,
+    adaptHandler(stakingTools.undelegateHp)
+  );
+
+  // Rewards tools
+  server.tool(
+    'claim_rewards',
+    'Claim pending author and curation rewards',
+    schemas.claimRewardsSchema,
+    adaptHandler(rewardsTools.claimRewards)
+  );
+
+  server.tool(
+    'get_reward_fund',
+    'Get information about the Hive reward pool',
+    schemas.getRewardFundSchema,
+    adaptHandler(rewardsTools.getRewardFund)
+  );
+
+  server.tool(
+    'get_pending_rewards',
+    'Get unclaimed rewards for a Hive account',
+    schemas.getPendingRewardsSchema,
+    adaptHandler(rewardsTools.getPendingRewards)
+  );
+
+  // Savings tools
+  server.tool(
+    'transfer_to_savings',
+    'Deposit HIVE or HBD to savings account (HBD earns interest)',
+    schemas.transferToSavingsSchema,
+    adaptHandler(savingsTools.transferToSavings)
+  );
+
+  server.tool(
+    'transfer_from_savings',
+    'Withdraw from savings (3-day waiting period)',
+    schemas.transferFromSavingsSchema,
+    adaptHandler(savingsTools.transferFromSavings)
+  );
+
+  server.tool(
+    'cancel_savings_withdraw',
+    'Cancel a pending savings withdrawal',
+    schemas.cancelSavingsWithdrawSchema,
+    adaptHandler(savingsTools.cancelSavingsWithdraw)
+  );
+
+  server.tool(
+    'get_savings_withdrawals',
+    'Get pending savings withdrawals for an account',
+    schemas.getSavingsWithdrawalsSchema,
+    adaptHandler(savingsTools.getSavingsWithdrawals)
+  );
+
+  // Conversion tools
+  server.tool(
+    'convert_hbd',
+    'Convert HBD to HIVE using median price feed (3.5-day conversion)',
+    schemas.convertHbdSchema,
+    adaptHandler(conversionsTools.convertHbd)
+  );
+
+  server.tool(
+    'collateralized_convert',
+    'Instant HBD to HIVE conversion using HIVE as collateral',
+    schemas.collateralizedConvertSchema,
+    adaptHandler(conversionsTools.collateralizedConvert)
+  );
+
+  server.tool(
+    'get_conversion_requests',
+    'Get pending HBD/HIVE conversions for an account',
+    schemas.getConversionRequestsSchema,
+    adaptHandler(conversionsTools.getConversionRequests)
+  );
+
+  server.tool(
+    'get_current_price_feed',
+    'Get current HBD/HIVE median price feed from witnesses',
+    schemas.getCurrentPriceFeedSchema,
+    adaptHandler(conversionsTools.getCurrentPriceFeed)
   );
 }

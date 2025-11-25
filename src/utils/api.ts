@@ -239,6 +239,99 @@ export function setPrimaryNode(node: string): boolean {
   return false;
 }
 
+// =============================================================================
+// VESTS / HP Conversion Utilities (Phase 4 - DeFi)
+// =============================================================================
+
+/**
+ * NAI Asset format from database_api
+ */
+interface NaiAsset {
+  amount: string;
+  precision: number;
+  nai: string;
+}
+
+/**
+ * Global properties structure for VESTS conversion
+ * Can come in NAI format or string format
+ */
+export interface GlobalProperties {
+  total_vesting_fund_hive: NaiAsset | string;
+  total_vesting_shares: NaiAsset | string;
+}
+
+/**
+ * Get dynamic global properties from blockchain
+ * Used for VESTS <-> HP conversions
+ */
+export async function getGlobalProperties(): Promise<GlobalProperties> {
+  const result = await callDatabaseApi<GlobalProperties>('get_dynamic_global_properties', {});
+  return result;
+}
+
+/**
+ * Parse asset to number - handles both NAI format and string format
+ * NAI format: { amount: "123456", precision: 3, nai: "@@000000021" }
+ * String format: "123.456 HIVE"
+ */
+export function parseAssetAmount(asset: NaiAsset | string): number {
+  if (typeof asset === 'object' && asset.amount !== undefined) {
+    // NAI format
+    const precision = asset.precision || 3;
+    return parseInt(asset.amount) / Math.pow(10, precision);
+  }
+  // String format
+  const parts = String(asset).split(' ');
+  return parseFloat(parts[0]);
+}
+
+/**
+ * Convert VESTS to HP (Hive Power)
+ * HP = (vests / total_vesting_shares) * total_vesting_fund_hive
+ */
+export function vestsToHp(vests: number, globals: GlobalProperties): number {
+  const totalVestingFundHive = parseAssetAmount(globals.total_vesting_fund_hive);
+  const totalVestingShares = parseAssetAmount(globals.total_vesting_shares);
+  
+  if (totalVestingShares === 0) return 0;
+  return (vests / totalVestingShares) * totalVestingFundHive;
+}
+
+/**
+ * Convert HP (Hive Power) to VESTS
+ * VESTS = (hp / total_vesting_fund_hive) * total_vesting_shares
+ */
+export function hpToVests(hp: number, globals: GlobalProperties): number {
+  const totalVestingFundHive = parseAssetAmount(globals.total_vesting_fund_hive);
+  const totalVestingShares = parseAssetAmount(globals.total_vesting_shares);
+  
+  if (totalVestingFundHive === 0) return 0;
+  return (hp / totalVestingFundHive) * totalVestingShares;
+}
+
+/**
+ * Get current price feed for HBD/HIVE conversions
+ */
+export async function getCurrentPriceFeed(): Promise<{
+  base: string;
+  quote: string;
+}> {
+  const result = await callDatabaseApi<{ current_median_history: { base: string; quote: string } }>(
+    'get_current_price_feed',
+    {}
+  );
+  return result.current_median_history;
+}
+
+/**
+ * Generate a unique request ID for savings/conversion operations
+ * Uses timestamp to ensure uniqueness
+ */
+export function generateRequestId(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
 export default {
   jsonRpcCall,
   callCondenserApi,
@@ -247,4 +340,10 @@ export default {
   getNodeHealthStatus,
   getCurrentPrimaryNode,
   setPrimaryNode,
+  getGlobalProperties,
+  vestsToHp,
+  hpToVests,
+  parseAssetAmount,
+  getCurrentPriceFeed,
+  generateRequestId,
 };

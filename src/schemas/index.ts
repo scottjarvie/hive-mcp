@@ -22,6 +22,10 @@ import * as socialSchemas from './social.js';
 import * as communitySchemas from './community.js';
 import * as contentAdvancedSchemas from './content-advanced.js';
 import * as resourceCreditsSchemas from './resource-credits.js';
+import * as stakingSchemas from './staking.js';
+import * as rewardsSchemas from './rewards.js';
+import * as savingsSchemas from './savings.js';
+import * as conversionsSchemas from './conversions.js';
 export * from './common.js';
 
 // Helper function to extract the shape from a ZodObject
@@ -91,3 +95,27 @@ export const deleteCommentSchema = getZodShape(contentAdvancedSchemas.deleteComm
 // Resource Credits schemas
 export const delegateRcSchema = getZodShape(resourceCreditsSchemas.delegateRcSchema);
 export const getRcAccountsSchema = getZodShape(resourceCreditsSchemas.getRcAccountsSchema);
+
+// Staking schemas (Phase 4 - DeFi)
+export const powerUpSchema = getZodShape(stakingSchemas.powerUpSchema);
+export const powerDownSchema = getZodShape(stakingSchemas.powerDownSchema);
+export const cancelPowerDownSchema = getZodShape(stakingSchemas.cancelPowerDownSchema);
+export const delegateHpSchema = getZodShape(stakingSchemas.delegateHpSchema);
+export const undelegateHpSchema = getZodShape(stakingSchemas.undelegateHpSchema);
+
+// Rewards schemas (Phase 4 - DeFi)
+export const claimRewardsSchema = getZodShape(rewardsSchemas.claimRewardsSchema);
+export const getRewardFundSchema = getZodShape(rewardsSchemas.getRewardFundSchema);
+export const getPendingRewardsSchema = getZodShape(rewardsSchemas.getPendingRewardsSchema);
+
+// Savings schemas (Phase 4 - DeFi)
+export const transferToSavingsSchema = getZodShape(savingsSchemas.transferToSavingsSchema);
+export const transferFromSavingsSchema = getZodShape(savingsSchemas.transferFromSavingsSchema);
+export const cancelSavingsWithdrawSchema = getZodShape(savingsSchemas.cancelSavingsWithdrawSchema);
+export const getSavingsWithdrawalsSchema = getZodShape(savingsSchemas.getSavingsWithdrawalsSchema);
+
+// Conversions schemas (Phase 4 - DeFi)
+export const convertHbdSchema = getZodShape(conversionsSchemas.convertHbdSchema);
+export const collateralizedConvertSchema = getZodShape(conversionsSchemas.collateralizedConvertSchema);
+export const getConversionRequestsSchema = getZodShape(conversionsSchemas.getConversionRequestsSchema);
+export const getCurrentPriceFeedSchema = getZodShape(conversionsSchemas.getCurrentPriceFeedSchema);

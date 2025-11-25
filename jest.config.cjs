@@ -4,7 +4,7 @@ module.exports = {
   preset: 'ts-jest/presets/js-with-ts-esm',
   testEnvironment: 'node',
   verbose: true,
-  testTimeout: 30000, // 30 seconds timeout for tests with API calls
+  testTimeout: 60000, // 60 seconds timeout for tests with API calls
   moduleFileExtensions: ['ts', 'js', 'mjs', 'json'],
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
