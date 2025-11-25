@@ -5,7 +5,7 @@
  * Purpose: Input validation for posts, comments, and content management.
  * Key elements: getPostsSchema, contentManageSchema (consolidated)
  * Dependencies: zod, common.js
- * Last update: Added comments category support and improved descriptions
+ * Last update: Added get_latest_post action for fetching user's latest post with full content
  */
 
 import { z } from 'zod';
@@ -17,11 +17,11 @@ import { tagsSchema, tagQueryCategories, userQueryCategories, beneficiariesSchem
 
 /**
  * Consolidated schema for getting posts
- * Combines: get_post_content, get_posts_by_tag, get_posts_by_user
+ * Combines: get_post_content, get_posts_by_tag, get_posts_by_user, get_latest_post
  */
 export const getPostsSchema = z.object({
-  action: z.enum(['by_tag', 'by_user', 'single']).describe(
-    'Action: by_tag (posts by tag/category), by_user (user posts/feed/comments), or single (one specific post)'
+  action: z.enum(['by_tag', 'by_user', 'single', 'get_latest_post']).describe(
+    'Action: by_tag (posts by tag/category), by_user (user posts/feed/comments), single (one specific post), or get_latest_post (user\'s latest post with full content)'
   ),
   // For single post
   author: z.string().optional().describe('Author of the post (for single)'),
@@ -31,8 +31,8 @@ export const getPostsSchema = z.object({
   category: z.union([tagQueryCategories, userQueryCategories]).optional().describe(
     'Sort/filter: For by_tag: trending/hot/created/etc. For by_user: posts (authored only), blog (includes reblogs), feed (from followed), comments, replies'
   ),
-  // For by_user
-  username: z.string().optional().describe('Username to get posts/comments for (for by_user)'),
+  // For by_user and get_latest_post
+  username: z.string().optional().describe('Username to get posts/comments for (for by_user, get_latest_post)'),
   // Common
   limit: z.number().min(1).max(20).optional().default(10).describe('Number of items to return (1-20)'),
 });

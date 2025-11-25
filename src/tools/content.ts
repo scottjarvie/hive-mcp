@@ -5,7 +5,7 @@
  * Purpose: Read-only content retrieval from the Hive blockchain.
  * Key elements: getPosts (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api, utils/date
- * Last update: Added community, excerpt, and PeakD links to post responses
+ * Last update: Added get_latest_post action, consistent response fields, community name support
  */
 
 import { type Response } from '../utils/response.js';
@@ -20,11 +20,11 @@ import { formatDate } from '../utils/date.js';
 
 /**
  * Consolidated dispatcher for getting posts
- * Handles: by_tag, by_user, single
+ * Handles: by_tag, by_user, single, get_latest_post
  */
 export async function getPosts(
   params: {
-    action: 'by_tag' | 'by_user' | 'single';
+    action: 'by_tag' | 'by_user' | 'single' | 'get_latest_post';
     author?: string;
     permlink?: string;
     tag?: string;
@@ -39,6 +39,11 @@ export async function getPosts(
         return errorResponse('Error: Author and permlink are required for single post action');
       }
       return getPostContent({ author: params.author, permlink: params.permlink });
+    case 'get_latest_post':
+      if (!params.username) {
+        return errorResponse('Error: Username is required for get_latest_post action');
+      }
+      return getLatestPost({ username: params.username });
     case 'by_tag':
       if (!params.tag || !params.category) {
         return errorResponse('Error: Tag and category are required for by_tag action');
@@ -123,17 +128,74 @@ export async function getPostContent(
     return successJson({
       title: content.title,
       author: content.author,
+      permlink: content.permlink,
       body: content.body,
       created: formatDate(content.created),
       last_update: formatDate(content.updated),
-      community: content.community_title || null,
-      excerpt: getPostExcerpt(content),
+      votes: content.stats?.total_votes || 0,
+      payout: content.payout || content.pending_payout_value || '0',
       reputation: content.author_reputation,
+      community: content.community_title || null,
+      community_id: content.category || null,
       tags,
+      excerpt: getPostExcerpt(content),
       url: `https://peakd.com/@${params.author}/${params.permlink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'get_post_content'));
+  }
+}
+
+/**
+ * Get the latest post by a user with full content
+ * Fetches the most recent post and returns complete data in a single call
+ */
+export async function getLatestPost(
+  params: { username: string }
+): Promise<Response> {
+  try {
+    // Fetch the most recent post by the user
+    const posts = await callBridgeApi<BridgePost[]>('get_account_posts', {
+      account: params.username,
+      sort: 'posts',  // Only authored posts, not reblogs
+      limit: 1,
+    });
+
+    if (!posts || !Array.isArray(posts) || posts.length === 0) {
+      return errorResponse(`Error: No posts found for user: ${params.username}`);
+    }
+
+    const post = posts[0];
+    
+    // Parse tags from json_metadata
+    let tags: string[] = [];
+    try {
+      if (post.json_metadata) {
+        const metadata = JSON.parse(post.json_metadata);
+        tags = metadata.tags || [];
+      }
+    } catch {
+      // Ignore JSON parse errors for metadata
+    }
+
+    return successJson({
+      title: post.title,
+      author: post.author,
+      permlink: post.permlink,
+      body: post.body,
+      created: formatDate(post.created),
+      last_update: formatDate(post.updated),
+      votes: post.stats?.total_votes || 0,
+      payout: post.payout || post.pending_payout_value || '0',
+      reputation: post.author_reputation,
+      community: post.community_title || null,
+      community_id: post.category || null,
+      tags,
+      excerpt: getPostExcerpt(post),
+      url: `https://peakd.com/@${post.author}/${post.permlink}`,
+    });
+  } catch (error) {
+    return errorResponse(handleError(error, 'get_latest_post'));
   }
 }
 
@@ -171,10 +233,12 @@ export async function getPostsByTag(
       author: post.author,
       permlink: post.permlink,
       created: formatDate(post.created),
+      last_update: formatDate(post.updated),
       votes: post.stats?.total_votes || 0,
       payout: post.payout || post.pending_payout_value || '0',
       reputation: post.author_reputation,
       community: post.community_title || null,
+      community_id: post.category || null,
       excerpt: getPostExcerpt(post),
       url: `https://peakd.com/@${post.author}/${post.permlink}`,
     }));
@@ -314,10 +378,12 @@ export async function getPostsByUser(
         author: post.author,
         permlink: post.permlink,
         created: formatDate(post.created),
+        last_update: formatDate(post.updated),
         votes: post.stats?.total_votes || 0,
         payout: post.payout || post.pending_payout_value || '0',
         reputation: post.author_reputation,
         community: post.community_title || null,
+        community_id: post.category || null,
         excerpt: getPostExcerpt(post),
         is_reblog: isReblog,
         reblogged_by: isReblog ? params.username : null,

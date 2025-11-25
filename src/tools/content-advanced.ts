@@ -155,7 +155,7 @@ export async function getContentReplies(
       children: reply.children,
       votes: reply.net_votes,
       payout: reply.pending_payout_value,
-      url: `https://hive.blog/@${reply.author}/${reply.permlink}`,
+      url: `https://peakd.com/@${reply.author}/${reply.permlink}`,
     }));
 
     return successJson({
@@ -257,7 +257,7 @@ export async function getAccountNotifications(
       type: notif.type,
       date: formatDate(notif.date),
       message: notif.msg,
-      url: notif.url ? `https://hive.blog${notif.url}` : null,
+      url: notif.url ? `https://peakd.com${notif.url}` : null,
       score: notif.score,
     }));
 
@@ -330,7 +330,7 @@ export async function getDiscussion(
       children: entry.children,
       votes: entry.net_votes,
       payout: entry.pending_payout_value,
-      url: `https://hive.blog/@${entry.author}/${entry.permlink}`,
+      url: `https://peakd.com/@${entry.author}/${entry.permlink}`,
     });
 
     return successJson({

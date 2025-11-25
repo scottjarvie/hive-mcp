@@ -310,7 +310,7 @@ export async function subscribeCommunity(
       account: username,
       community: params.community,
       action: 'subscribe',
-      community_url: `https://hive.blog/trending/${params.community}`,
+      community_url: `https://peakd.com/c/${params.community}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'subscribe_community'));

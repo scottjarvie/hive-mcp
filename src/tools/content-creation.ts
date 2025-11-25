@@ -234,7 +234,7 @@ export async function createPost(
       permlink: finalPermalink,
       title: params.title,
       tags: finalTags,
-      url: `https://hive.blog/@${username}/${finalPermalink}`,
+      url: `https://peakd.com/@${username}/${finalPermalink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'create_post'));
@@ -356,7 +356,7 @@ export async function createComment(
       parent_permlink: params.parent_permlink,
       author: username,
       permlink: finalPermalink,
-      url: `https://hive.blog/@${params.parent_author}/${params.parent_permlink}#@${username}/${finalPermalink}`,
+      url: `https://peakd.com/@${params.parent_author}/${params.parent_permlink}#@${username}/${finalPermalink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'create_comment'));
@@ -454,7 +454,7 @@ export async function updatePost(
       title: finalTitle,
       tags: finalTags,
       action: 'updated',
-      url: `https://hive.blog/@${params.author}/${params.permlink}`,
+      url: `https://peakd.com/@${params.author}/${params.permlink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'update_post'));

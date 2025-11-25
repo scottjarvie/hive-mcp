@@ -462,7 +462,7 @@ export async function reblogPost(
       author: params.author,
       permlink: params.permlink,
       action: 'reblog',
-      post_url: `https://hive.blog/@${params.author}/${params.permlink}`,
+      post_url: `https://peakd.com/@${params.author}/${params.permlink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'reblog_post'));
