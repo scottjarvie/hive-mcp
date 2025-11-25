@@ -5,7 +5,7 @@
  * Purpose: Input validation for posts, comments, and content management.
  * Key elements: getPostsSchema, contentManageSchema (consolidated)
  * Dependencies: zod, common.js
- * Last update: Added get_latest_post action for fetching user's latest post with full content
+ * Last update: Added 'since' date filter parameter for post analysis
  */
 
 import { z } from 'zod';
@@ -35,6 +35,8 @@ export const getPostsSchema = z.object({
   username: z.string().optional().describe('Username to get posts/comments for (for by_user, get_latest_post)'),
   // Common
   limit: z.number().min(1).max(20).optional().default(10).describe('Number of items to return (1-20)'),
+  // Date filter for analysis
+  since: z.string().optional().describe('ISO date string to filter posts created after this date (e.g., "2025-10-25"). Useful for analyzing recent posting patterns.'),
 });
 
 /**

@@ -5,7 +5,7 @@
  * Purpose: Read-only content retrieval from the Hive blockchain.
  * Key elements: getPosts (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api, utils/date
- * Last update: Added get_latest_post action, consistent response fields, community name support
+ * Last update: Added 'since' date filter parameter for post analysis
  */
 
 import { type Response } from '../utils/response.js';
@@ -21,6 +21,9 @@ import { formatDate } from '../utils/date.js';
 /**
  * Consolidated dispatcher for getting posts
  * Handles: by_tag, by_user, single, get_latest_post
+ * 
+ * @param since - Optional ISO date string to filter posts (e.g., "2025-10-25")
+ *                Only returns posts created after this date
  */
 export async function getPosts(
   params: {
@@ -31,6 +34,7 @@ export async function getPosts(
     category?: string;
     username?: string;
     limit?: number;
+    since?: string;
   }
 ): Promise<Response> {
   switch (params.action) {
@@ -52,6 +56,7 @@ export async function getPosts(
         category: params.category,
         tag: params.tag,
         limit: params.limit || 10,
+        since: params.since,
       });
     case 'by_user':
       if (!params.username || !params.category) {
@@ -61,6 +66,7 @@ export async function getPosts(
         category: params.category,
         username: params.username,
         limit: params.limit || 10,
+        since: params.since,
       });
     default:
       return errorResponse(`Unknown action: ${params.action}`);
@@ -203,20 +209,26 @@ export async function getLatestPost(
  * Get posts by tag
  * Retrieves Hive posts filtered by a specific tag and sorted by a category
  * Uses bridge.get_ranked_posts API for richer data including community and excerpts
+ * 
+ * @param since - Optional ISO date string to filter posts created after this date
  */
 export async function getPostsByTag(
   params: { 
     category: string; 
     tag: string; 
     limit: number;
+    since?: string;
   }
 ): Promise<Response> {
   try {
+    // Fetch more posts if filtering by date (we'll filter client-side)
+    const fetchLimit = params.since ? Math.min(params.limit * 3, 100) : params.limit;
+    
     // Use bridge.get_ranked_posts which provides community data and better metadata
     const posts = await callBridgeApi<BridgePost[]>('get_ranked_posts', {
       sort: params.category,  // trending, hot, created, etc.
       tag: params.tag,
-      limit: params.limit,
+      limit: fetchLimit,
     });
 
     if (!posts || !Array.isArray(posts)) {
@@ -225,10 +237,24 @@ export async function getPostsByTag(
         category: params.category,
         count: 0,
         items: [],
+        ...(params.since && { since: params.since }),
       });
     }
 
-    const formattedPosts = posts.map((post) => ({
+    // Filter by date if since parameter provided
+    let filteredPosts = posts;
+    if (params.since) {
+      const sinceDate = new Date(params.since);
+      filteredPosts = posts.filter(post => {
+        const postDate = new Date(post.created + 'Z');
+        return postDate >= sinceDate;
+      });
+    }
+
+    // Apply limit after filtering
+    const limitedPosts = filteredPosts.slice(0, params.limit);
+
+    const formattedPosts = limitedPosts.map((post) => ({
       title: post.title,
       author: post.author,
       permlink: post.permlink,
@@ -247,6 +273,7 @@ export async function getPostsByTag(
       tag: params.tag,
       category: params.category,
       count: formattedPosts.length,
+      ...(params.since && { since: params.since, total_before_filter: filteredPosts.length }),
       items: formattedPosts,
     });
   } catch (error) {
@@ -342,20 +369,26 @@ function getPostExcerpt(post: BridgePost): string {
  * - feed: Posts from accounts they follow
  * - comments: Comments made by the user
  * - replies: Replies to their posts
+ * 
+ * @param since - Optional ISO date string to filter posts created after this date
  */
 export async function getPostsByUser(
   params: { 
     category: string; 
     username: string; 
     limit: number;
+    since?: string;
   }
 ): Promise<Response> {
   try {
+    // Fetch more posts if filtering by date (we'll filter client-side)
+    const fetchLimit = params.since ? Math.min(params.limit * 3, 100) : params.limit;
+    
     // Use bridge.get_account_posts API which provides reblog metadata
     const posts = await callBridgeApi<BridgePost[]>('get_account_posts', {
       account: params.username,
       sort: params.category,  // posts, blog, feed, comments, replies
-      limit: params.limit,
+      limit: fetchLimit,
     });
 
     if (!posts || !Array.isArray(posts)) {
@@ -365,11 +398,25 @@ export async function getPostsByUser(
         result_type: getCategoryLabel(params.category),
         count: 0,
         items: [],
+        ...(params.since && { since: params.since }),
       });
     }
 
+    // Filter by date if since parameter provided
+    let filteredPosts = posts;
+    if (params.since) {
+      const sinceDate = new Date(params.since);
+      filteredPosts = posts.filter(post => {
+        const postDate = new Date(post.created + 'Z');
+        return postDate >= sinceDate;
+      });
+    }
+
+    // Apply limit after filtering
+    const limitedPosts = filteredPosts.slice(0, params.limit);
+
     // Format posts with reblog metadata, community, and excerpt
-    const formattedPosts = posts.map((post) => {
+    const formattedPosts = limitedPosts.map((post) => {
       // Determine if this is a reblog (author differs from queried user in blog view)
       const isReblog = params.category === 'blog' && post.author !== params.username;
       
@@ -402,6 +449,12 @@ export async function getPostsByUser(
       count: formattedPosts.length,
       items: formattedPosts,
     };
+
+    // Add date filter info if used
+    if (params.since) {
+      response.since = params.since;
+      response.total_fetched = filteredPosts.length;
+    }
 
     // Add reblog breakdown for blog category
     if (params.category === 'blog') {
