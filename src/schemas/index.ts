@@ -18,6 +18,8 @@ import * as cryptoSchemas from './crypto.js';
 import * as blockchainSchemas from './blockchain.js';
 import * as messagingSchemas from './messaging.js';
 import * as promptsSchemas from './prompts.js';
+import * as socialSchemas from './social.js';
+import * as communitySchemas from './community.js';
 export * from './common.js';
 
 // Helper function to extract the shape from a ZodObject
@@ -57,3 +59,20 @@ export const verifySignatureSchema = getZodShape(cryptoSchemas.verifySignatureSc
 
 // Blockchain schemas
 export const getChainPropertiesSchema = getZodShape(blockchainSchemas.getChainPropertiesSchema);
+
+// Social schemas
+export const getFollowersSchema = getZodShape(socialSchemas.getFollowersSchema);
+export const getFollowingSchema = getZodShape(socialSchemas.getFollowingSchema);
+export const getFollowCountSchema = getZodShape(socialSchemas.getFollowCountSchema);
+export const followAccountSchema = getZodShape(socialSchemas.followAccountSchema);
+export const unfollowAccountSchema = getZodShape(socialSchemas.unfollowAccountSchema);
+export const muteAccountSchema = getZodShape(socialSchemas.muteAccountSchema);
+export const unmuteAccountSchema = getZodShape(socialSchemas.unmuteAccountSchema);
+export const reblogPostSchema = getZodShape(socialSchemas.reblogPostSchema);
+
+// Community schemas
+export const getCommunitySchema = getZodShape(communitySchemas.getCommunitySchema);
+export const listCommunitiesSchema = getZodShape(communitySchemas.listCommunitiesSchema);
+export const getCommunitySubscribersSchema = getZodShape(communitySchemas.getCommunitySubscribersSchema);
+export const subscribeCommunitySchema = getZodShape(communitySchemas.subscribeCommunitySchema);
+export const unsubscribeCommunitySchema = getZodShape(communitySchemas.unsubscribeCommunitySchema);

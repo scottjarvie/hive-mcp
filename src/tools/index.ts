@@ -17,6 +17,8 @@ import * as contentCreationTools from './content-creation.js';
 import * as cryptoTools from './crypto.js';
 import * as blockchainTools from './blockchain.js';
 import * as messagingTools from './messaging.js';
+import * as socialTools from './social.js';
+import * as communityTools from './community.js';
 import { adaptHandler } from '../utils/response.js';
 import * as promptsTools from './prompts.js';
 
@@ -164,5 +166,98 @@ export function registerTools(server: McpServer): void {
     'Retrieve encrypted messages from account history with optional decryption',
     schemas.getEncryptedMessagesSchema,
     adaptHandler(messagingTools.getEncryptedMessages)
+  );
+
+  // Social tools
+  server.tool(
+    'get_followers',
+    'Get list of followers for a Hive account',
+    schemas.getFollowersSchema,
+    adaptHandler(socialTools.getFollowers)
+  );
+
+  server.tool(
+    'get_following',
+    'Get list of accounts that a Hive user follows',
+    schemas.getFollowingSchema,
+    adaptHandler(socialTools.getFollowing)
+  );
+
+  server.tool(
+    'get_follow_count',
+    'Get follower and following counts for a Hive account',
+    schemas.getFollowCountSchema,
+    adaptHandler(socialTools.getFollowCount)
+  );
+
+  server.tool(
+    'follow_account',
+    'Follow a Hive account to see their posts in your feed',
+    schemas.followAccountSchema,
+    adaptHandler(socialTools.followAccount)
+  );
+
+  server.tool(
+    'unfollow_account',
+    'Unfollow a Hive account',
+    schemas.unfollowAccountSchema,
+    adaptHandler(socialTools.unfollowAccount)
+  );
+
+  server.tool(
+    'mute_account',
+    'Mute a Hive account to hide their content',
+    schemas.muteAccountSchema,
+    adaptHandler(socialTools.muteAccount)
+  );
+
+  server.tool(
+    'unmute_account',
+    'Unmute a previously muted Hive account',
+    schemas.unmuteAccountSchema,
+    adaptHandler(socialTools.unmuteAccount)
+  );
+
+  server.tool(
+    'reblog_post',
+    'Reblog (resteem) a Hive post to share it with your followers',
+    schemas.reblogPostSchema,
+    adaptHandler(socialTools.reblogPost)
+  );
+
+  // Community tools
+  server.tool(
+    'get_community',
+    'Get details about a Hive community',
+    schemas.getCommunitySchema,
+    adaptHandler(communityTools.getCommunity)
+  );
+
+  server.tool(
+    'list_communities',
+    'List and search Hive communities',
+    schemas.listCommunitiesSchema,
+    adaptHandler(communityTools.listCommunities)
+  );
+
+  server.tool(
+    'get_community_subscribers',
+    'Get list of subscribers for a Hive community',
+    schemas.getCommunitySubscribersSchema,
+    adaptHandler(communityTools.getCommunitySubscribers)
+  );
+
+  server.tool(
+    'subscribe_community',
+    'Subscribe to (join) a Hive community',
+    schemas.subscribeCommunitySchema,
+    adaptHandler(communityTools.subscribeCommunity)
+  );
+
+  server.tool(
+    'unsubscribe_community',
+    'Unsubscribe from (leave) a Hive community',
+    schemas.unsubscribeCommunitySchema,
+    adaptHandler(communityTools.unsubscribeCommunity)
   );
 }
