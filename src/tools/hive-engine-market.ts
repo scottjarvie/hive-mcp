@@ -3,9 +3,9 @@
  * 
  * Summary: Tools for Hive Engine market/trading operations.
  * Purpose: Query orderbook, place/cancel orders, view trade history.
- * Key elements: getHEMarketOrderbook, placeHEBuyOrder, placeHESellOrder
+ * Key elements: heMarket (consolidated dispatcher)
  * Dependencies: hive-engine-api, config, WAX client
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -20,6 +20,75 @@ import {
   getMarketMetrics,
   getOpenOrders,
 } from '../utils/hive-engine-api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all Hive Engine market operations
+ * Handles: orderbook, history, metrics, open_orders, buy, sell, cancel
+ */
+export async function heMarket(
+  params: {
+    action: 'orderbook' | 'history' | 'metrics' | 'open_orders' | 'buy' | 'sell' | 'cancel';
+    symbol?: string;
+    account?: string;
+    quantity?: string;
+    price?: string;
+    type?: 'buy' | 'sell';
+    id?: string;
+    limit?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'orderbook':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for orderbook action');
+      }
+      return getHEMarketOrderbook({ symbol: params.symbol, limit: params.limit || 50 });
+    case 'history':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for history action');
+      }
+      return getHEMarketHistory({ symbol: params.symbol, limit: params.limit || 100 });
+    case 'metrics':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for metrics action');
+      }
+      return getHEMarketMetrics({ symbol: params.symbol });
+    case 'open_orders':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for open_orders action');
+      }
+      return getHEOpenOrders({ account: params.account });
+    case 'buy':
+      if (!params.symbol || !params.quantity || !params.price) {
+        return errorResponse('Error: Symbol, quantity, and price are required for buy action');
+      }
+      return placeHEBuyOrder({
+        symbol: params.symbol,
+        quantity: params.quantity,
+        price: params.price,
+      });
+    case 'sell':
+      if (!params.symbol || !params.quantity || !params.price) {
+        return errorResponse('Error: Symbol, quantity, and price are required for sell action');
+      }
+      return placeHESellOrder({
+        symbol: params.symbol,
+        quantity: params.quantity,
+        price: params.price,
+      });
+    case 'cancel':
+      if (!params.type || !params.id) {
+        return errorResponse('Error: Type and id are required for cancel action');
+      }
+      return cancelHEOrder({ type: params.type, id: params.id });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
 
 // =============================================================================
 // Read Operations

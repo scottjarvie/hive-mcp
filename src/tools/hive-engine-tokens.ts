@@ -3,9 +3,9 @@
  * 
  * Summary: Tools for Hive Engine token operations.
  * Purpose: Query token balances/info, transfer, stake, delegate tokens.
- * Key elements: getHETokenBalance, transferHEToken, stakeHEToken
+ * Key elements: heTokens (consolidated dispatcher)
  * Dependencies: hive-engine-api, config, WAX client
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -21,6 +21,95 @@ import {
   type HEToken,
   type HEBalance,
 } from '../utils/hive-engine-api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all Hive Engine token operations
+ * Handles: balance, info, list, transfer, stake, unstake, delegate, undelegate
+ */
+export async function heTokens(
+  params: {
+    action: 'balance' | 'info' | 'list' | 'transfer' | 'stake' | 'unstake' | 'delegate' | 'undelegate';
+    account?: string;
+    symbol?: string;
+    quantity?: string;
+    to?: string;
+    from?: string;
+    memo?: string;
+    limit?: number;
+    offset?: number;
+    issuer?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'balance':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for balance action');
+      }
+      return getHETokenBalance({ account: params.account, symbol: params.symbol });
+    case 'info':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for info action');
+      }
+      return getHETokenInfo({ symbol: params.symbol });
+    case 'list':
+      return getHETokensList({
+        limit: params.limit || 100,
+        offset: params.offset || 0,
+        issuer: params.issuer,
+      });
+    case 'transfer':
+      if (!params.to || !params.symbol || !params.quantity) {
+        return errorResponse('Error: to, symbol, and quantity are required for transfer action');
+      }
+      return transferHEToken({
+        to: params.to,
+        symbol: params.symbol,
+        quantity: params.quantity,
+        memo: params.memo || '',
+      });
+    case 'stake':
+      if (!params.symbol || !params.quantity) {
+        return errorResponse('Error: Symbol and quantity are required for stake action');
+      }
+      return stakeHEToken({
+        symbol: params.symbol,
+        quantity: params.quantity,
+        to: params.to,
+      });
+    case 'unstake':
+      if (!params.symbol || !params.quantity) {
+        return errorResponse('Error: Symbol and quantity are required for unstake action');
+      }
+      return unstakeHEToken({
+        symbol: params.symbol,
+        quantity: params.quantity,
+      });
+    case 'delegate':
+      if (!params.symbol || !params.quantity || !params.to) {
+        return errorResponse('Error: Symbol, quantity, and to are required for delegate action');
+      }
+      return delegateHEToken({
+        symbol: params.symbol,
+        quantity: params.quantity,
+        to: params.to,
+      });
+    case 'undelegate':
+      if (!params.symbol || !params.quantity || !params.from) {
+        return errorResponse('Error: Symbol, quantity, and from are required for undelegate action');
+      }
+      return undelegateHEToken({
+        symbol: params.symbol,
+        quantity: params.quantity,
+        from: params.from,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
 
 // =============================================================================
 // Read Operations

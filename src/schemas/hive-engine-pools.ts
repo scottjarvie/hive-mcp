@@ -3,12 +3,46 @@
  * 
  * Summary: Zod schemas for Hive Engine liquidity pool operations.
  * Purpose: Input validation for pool queries and swaps.
- * Key elements: getHEPoolInfoSchema, swapHETokensSchema
+ * Key elements: hePoolsSchema (consolidated)
  * Dependencies: zod
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - grouped related HE pool operations
  */
 
 import { z } from 'zod';
+
+// =========================================================================
+// CONSOLIDATED SCHEMA
+// =========================================================================
+
+/**
+ * Consolidated schema for all Hive Engine pool operations
+ * Combines: info, list, estimate_swap, swap, add_liquidity, remove_liquidity
+ */
+export const hePoolsSchema = z.object({
+  action: z.enum(['info', 'list', 'estimate_swap', 'swap', 'add_liquidity', 'remove_liquidity']).describe(
+    'Action: info, list, estimate_swap, swap, add_liquidity, or remove_liquidity'
+  ),
+  // For info, estimate_swap, swap, add_liquidity, remove_liquidity
+  tokenPair: z.string().optional().describe('Token pair (e.g., "SWAP.HIVE:LEO")'),
+  // For estimate_swap, swap
+  tokenSymbol: z.string().optional().describe('Token you are swapping FROM'),
+  tokenAmount: z.string().optional().describe('Amount to swap'),
+  minAmountOut: z.string().optional().describe('Minimum output (slippage protection, for swap)'),
+  // For add_liquidity
+  baseQuantity: z.string().optional().describe('Base token amount (for add_liquidity)'),
+  quoteQuantity: z.string().optional().describe('Quote token amount (for add_liquidity)'),
+  maxSlippage: z.string().optional().default('0.005').describe('Max slippage (for add_liquidity)'),
+  maxDeviation: z.string().optional().default('0.01').describe('Max price deviation (for add_liquidity)'),
+  // For remove_liquidity
+  shares: z.string().optional().describe('LP shares to remove (for remove_liquidity)'),
+  // For list
+  limit: z.number().min(1).max(500).optional().default(100).describe('Max results (for list)'),
+  offset: z.number().min(0).optional().default(0).describe('Pagination offset (for list)'),
+});
+
+// =========================================================================
+// LEGACY SCHEMAS (kept for internal use by dispatchers)
+// =========================================================================
 
 // Schema for get_he_pool_info tool
 export const getHEPoolInfoSchema = z.object({

@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for social interactions on the Hive blockchain.
  * Purpose: Follow, mute, and reblog operations via Hivemind.
- * Key elements: getFollowers, getFollowing, followAccount, muteAccount, reblogPost
+ * Key elements: socialRelationship, socialInfo (consolidated dispatchers)
  * Dependencies: @hiveio/wax, config/client, utils/api, utils/response, utils/error
- * Last update: Phase 2 - Hivemind social features
+ * Last update: Tool consolidation - added dispatcher functions
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,73 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHERS
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for social relationship actions
+ * Handles: follow, unfollow, mute, unmute
+ */
+export async function socialRelationship(
+  params: {
+    action: 'follow' | 'unfollow' | 'mute' | 'unmute';
+    account: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'follow':
+      return followAccount({ account: params.account });
+    case 'unfollow':
+      return unfollowAccount({ account: params.account });
+    case 'mute':
+      return muteAccount({ account: params.account });
+    case 'unmute':
+      return unmuteAccount({ account: params.account });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+/**
+ * Consolidated dispatcher for social info queries
+ * Handles: get_followers, get_following, get_follow_count
+ */
+export async function socialInfo(
+  params: {
+    action: 'get_followers' | 'get_following' | 'get_follow_count';
+    account: string;
+    start?: string;
+    type?: string;
+    limit?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'get_followers':
+      return getFollowers({
+        account: params.account,
+        start: params.start || '',
+        type: params.type || 'blog',
+        limit: params.limit || 100,
+      });
+    case 'get_following':
+      return getFollowing({
+        account: params.account,
+        start: params.start || '',
+        type: params.type || 'blog',
+        limit: params.limit || 100,
+      });
+    case 'get_follow_count':
+      return getFollowCount({ account: params.account });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Type definitions for follow operations
 interface FollowEntry {

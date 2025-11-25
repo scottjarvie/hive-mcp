@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for Hive community interactions.
  * Purpose: Subscribe, unsubscribe, and query community data via Hivemind.
- * Key elements: getCommunity, listCommunities, subscribeCommunity
+ * Key elements: communityMembership, communityInfo (consolidated dispatchers)
  * Dependencies: @hiveio/wax, config/client, utils/api, utils/response, utils/error
- * Last update: Phase 2 - Hivemind social features
+ * Last update: Tool consolidation - added dispatcher functions
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,75 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callBridgeApi } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHERS
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for community membership actions
+ * Handles: subscribe, unsubscribe, get_subscribers
+ */
+export async function communityMembership(
+  params: {
+    action: 'subscribe' | 'unsubscribe' | 'get_subscribers';
+    community: string;
+    last?: string;
+    limit?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'subscribe':
+      return subscribeCommunity({ community: params.community });
+    case 'unsubscribe':
+      return unsubscribeCommunity({ community: params.community });
+    case 'get_subscribers':
+      return getCommunitySubscribers({
+        community: params.community,
+        last: params.last,
+        limit: params.limit || 50,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+/**
+ * Consolidated dispatcher for community info queries
+ * Handles: get_community, list_communities
+ */
+export async function communityInfo(
+  params: {
+    action: 'get_community' | 'list_communities';
+    name?: string;
+    observer?: string;
+    last?: string;
+    limit?: number;
+    query?: string;
+    sort?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'get_community':
+      if (!params.name) {
+        return errorResponse('Error: Community name is required for get_community action');
+      }
+      return getCommunity({ name: params.name, observer: params.observer });
+    case 'list_communities':
+      return listCommunities({
+        last: params.last,
+        limit: params.limit || 20,
+        query: params.query,
+        sort: params.sort || 'rank',
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Type definitions for community data
 interface CommunityData {

@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for savings account operations.
  * Purpose: Transfer to/from savings with WAX transaction builder.
- * Key elements: transferToSavings, transferFromSavings, cancelSavingsWithdraw, getSavingsWithdrawals
+ * Key elements: savings (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Phase 4 - DeFi operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,65 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callDatabaseApi, generateRequestId } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all savings operations
+ * Handles: deposit, withdraw, cancel_withdraw, get_withdrawals
+ */
+export async function savings(
+  params: {
+    action: 'deposit' | 'withdraw' | 'cancel_withdraw' | 'get_withdrawals';
+    amount?: number;
+    currency?: string;
+    to?: string;
+    memo?: string;
+    request_id?: number;
+    account?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'deposit':
+      if (!params.amount || !params.currency) {
+        return errorResponse('Error: Amount and currency are required for deposit action');
+      }
+      return transferToSavings({
+        amount: params.amount,
+        currency: params.currency,
+        to: params.to,
+        memo: params.memo,
+      });
+    case 'withdraw':
+      if (!params.amount || !params.currency) {
+        return errorResponse('Error: Amount and currency are required for withdraw action');
+      }
+      return transferFromSavings({
+        amount: params.amount,
+        currency: params.currency,
+        to: params.to,
+        memo: params.memo,
+      });
+    case 'cancel_withdraw':
+      if (params.request_id === undefined) {
+        return errorResponse('Error: Request ID is required for cancel_withdraw action');
+      }
+      return cancelSavingsWithdraw({ request_id: params.request_id });
+    case 'get_withdrawals':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for get_withdrawals action');
+      }
+      return getSavingsWithdrawals({ account: params.account });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Transfer to Savings - Deposit HIVE or HBD to savings account

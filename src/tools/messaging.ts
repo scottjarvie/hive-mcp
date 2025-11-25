@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for encrypted messaging on the Hive blockchain.
  * Purpose: Encrypt/decrypt messages and send encrypted memos via transfers.
- * Key elements: encryptMessage, decryptMessage, sendEncryptedMessage, getEncryptedMessages
+ * Key elements: messaging (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Migration from dhive to WAX library
+ * Last update: Tool consolidation - added dispatcher function
  * 
  * Note: WAX encryption requires BeeKeeper for key management. This implementation
  * provides basic functionality with some limitations on client-side encryption.
@@ -18,6 +18,62 @@ import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
 import logger from '../utils/logger.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all messaging operations
+ * Handles: encrypt, decrypt, send, get_messages
+ */
+export async function messaging(
+  params: {
+    action: 'encrypt' | 'decrypt' | 'send' | 'get_messages';
+    message?: string;
+    recipient?: string;
+    encrypted_message?: string;
+    sender?: string;
+    amount?: number;
+    username?: string;
+    limit?: number;
+    decrypt?: boolean;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'encrypt':
+      if (!params.message || !params.recipient) {
+        return errorResponse('Error: Message and recipient are required for encrypt action');
+      }
+      return encryptMessage({ message: params.message, recipient: params.recipient });
+    case 'decrypt':
+      if (!params.encrypted_message || !params.sender) {
+        return errorResponse('Error: encrypted_message and sender are required for decrypt action');
+      }
+      return decryptMessage({ encrypted_message: params.encrypted_message, sender: params.sender });
+    case 'send':
+      if (!params.message || !params.recipient) {
+        return errorResponse('Error: Message and recipient are required for send action');
+      }
+      return sendEncryptedMessage({
+        message: params.message,
+        recipient: params.recipient,
+        amount: params.amount || 0.001,
+      });
+    case 'get_messages':
+      return getEncryptedMessages({
+        username: params.username,
+        limit: params.limit || 20,
+        decrypt: params.decrypt || false,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Helper function to get a public memo key for a Hive account

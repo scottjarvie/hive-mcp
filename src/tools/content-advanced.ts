@@ -3,15 +3,72 @@
  * 
  * Summary: Provides advanced content tools for replies, votes, notifications, discussions.
  * Purpose: Read-only advanced content retrieval from the Hive blockchain.
- * Key elements: getContentReplies, getActiveVotes, getRebloggedBy, getAccountNotifications, getDiscussion
- * Dependencies: utils/response, utils/error, utils/api
- * Last update: Phase 3 - Advanced content features
+ * Key elements: contentEngagement (consolidated dispatcher)
+ * Dependencies: utils/response, utils/error, utils/api, transaction.js, social.js
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi, callBridgeApi } from '../utils/api.js';
+import { voteOnPost } from './transaction.js';
+import { reblogPost } from './social.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for content engagement operations
+ * Handles: vote, reblog, get_replies, get_votes, get_reblogged_by
+ */
+export async function contentEngagement(
+  params: {
+    action: 'vote' | 'reblog' | 'get_replies' | 'get_votes' | 'get_reblogged_by';
+    author: string;
+    permlink: string;
+    weight?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'vote':
+      if (params.weight === undefined) {
+        return errorResponse('Error: Weight is required for vote action (-10000 to 10000)');
+      }
+      return voteOnPost({
+        author: params.author,
+        permlink: params.permlink,
+        weight: params.weight,
+      });
+    case 'reblog':
+      return reblogPost({
+        author: params.author,
+        permlink: params.permlink,
+      });
+    case 'get_replies':
+      return getContentReplies({
+        author: params.author,
+        permlink: params.permlink,
+      });
+    case 'get_votes':
+      return getActiveVotes({
+        author: params.author,
+        permlink: params.permlink,
+      });
+    case 'get_reblogged_by':
+      return getRebloggedBy({
+        author: params.author,
+        permlink: params.permlink,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Interface for vote data from API
 interface RawVote {

@@ -3,15 +3,67 @@
  * 
  * Summary: Provides tools for fetching Hive posts and content.
  * Purpose: Read-only content retrieval from the Hive blockchain.
- * Key elements: getPostContent, getPostsByTag, getPostsByUser
+ * Key elements: getPosts (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api
- * Last update: Migration from dhive to WAX library
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for getting posts
+ * Handles: by_tag, by_user, single
+ */
+export async function getPosts(
+  params: {
+    action: 'by_tag' | 'by_user' | 'single';
+    author?: string;
+    permlink?: string;
+    tag?: string;
+    category?: string;
+    username?: string;
+    limit?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'single':
+      if (!params.author || !params.permlink) {
+        return errorResponse('Error: Author and permlink are required for single post action');
+      }
+      return getPostContent({ author: params.author, permlink: params.permlink });
+    case 'by_tag':
+      if (!params.tag || !params.category) {
+        return errorResponse('Error: Tag and category are required for by_tag action');
+      }
+      return getPostsByTag({
+        category: params.category,
+        tag: params.tag,
+        limit: params.limit || 10,
+      });
+    case 'by_user':
+      if (!params.username || !params.category) {
+        return errorResponse('Error: Username and category are required for by_user action');
+      }
+      return getPostsByUser({
+        category: params.category,
+        username: params.username,
+        limit: params.limit || 10,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Post interface for formatted posts
 interface FormattedPost {

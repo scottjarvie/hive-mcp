@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for HBD/HIVE conversion operations.
  * Purpose: Convert between HBD and HIVE using WAX transaction builder.
- * Key elements: convertHbd, collateralizedConvert, getConversionRequests, getCurrentPriceFeed
+ * Key elements: conversions (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Phase 4 - DeFi operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,48 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callDatabaseApi, generateRequestId } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all conversion operations
+ * Handles: convert_hbd, collateralized_convert, get_requests, get_price_feed
+ */
+export async function conversions(
+  params: {
+    action: 'convert_hbd' | 'collateralized_convert' | 'get_requests' | 'get_price_feed';
+    amount?: number;
+    account?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'convert_hbd':
+      if (!params.amount) {
+        return errorResponse('Error: Amount is required for convert_hbd action');
+      }
+      return convertHbd({ amount: params.amount });
+    case 'collateralized_convert':
+      if (!params.amount) {
+        return errorResponse('Error: Amount is required for collateralized_convert action');
+      }
+      return collateralizedConvert({ amount: params.amount });
+    case 'get_requests':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for get_requests action');
+      }
+      return getConversionRequests({ account: params.account });
+    case 'get_price_feed':
+      return getCurrentPriceFeed({});
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Convert HBD - Convert HBD to HIVE (3.5 day conversion)

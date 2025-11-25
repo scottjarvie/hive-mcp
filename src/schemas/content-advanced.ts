@@ -3,12 +3,35 @@
  * 
  * Summary: Zod schemas for advanced content tools.
  * Purpose: Input validation for content replies, votes, notifications, discussions.
- * Key elements: getContentRepliesSchema, getActiveVotesSchema, getAccountNotificationsSchema
+ * Key elements: contentEngagementSchema (consolidated)
  * Dependencies: zod
- * Last update: Phase 3 - Advanced content features
+ * Last update: Tool consolidation - grouped related content engagement operations
  */
 
 import { z } from 'zod';
+
+// =========================================================================
+// CONSOLIDATED SCHEMA
+// =========================================================================
+
+/**
+ * Consolidated schema for content engagement operations
+ * Combines: vote, reblog, get_replies, get_votes, get_reblogged_by
+ */
+export const contentEngagementSchema = z.object({
+  action: z.enum(['vote', 'reblog', 'get_replies', 'get_votes', 'get_reblogged_by']).describe(
+    'Action: vote, reblog, get_replies, get_votes, or get_reblogged_by'
+  ),
+  author: z.string().describe('Author of the post'),
+  permlink: z.string().describe('Permlink of the post'),
+  weight: z.number().min(-10000).max(10000).optional().describe(
+    'Vote weight: -10000 (100% downvote) to 10000 (100% upvote). Required for vote action.'
+  ),
+});
+
+// =========================================================================
+// LEGACY SCHEMAS (kept for internal use by dispatchers)
+// =========================================================================
 
 // Schema for get_content_replies tool
 export const getContentRepliesSchema = z.object({

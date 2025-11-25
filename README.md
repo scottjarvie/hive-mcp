@@ -22,176 +22,73 @@ This server provides a bridge between AI assistants (like Claude) and the Hive e
 - `create-post` - Creates a structured prompt to guide the AI through creating a new Hive post with the right format and tags
 - `analyze-account` - Generates a prompt to analyze a Hive account's statistics, posting history, and activity patterns
 
-### Tools (84 total)
+### Tools (22 consolidated tools)
 
-#### Account & Blockchain (4 tools)
+Tools have been consolidated into logical groups with an `action` parameter to reduce complexity while maintaining full functionality. This improves AI tool selection and reduces context window usage.
 
-| Tool                      | Description                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------- |
-| `get_account_info`        | Get detailed account information including balance, voting power, and authority |
-| `get_account_history`     | Get transaction history with optional operation type filtering                  |
-| `get_vesting_delegations` | Get HP delegations made by an account                                           |
-| `get_chain_properties`    | Get current blockchain properties and statistics                                |
+#### Social (2 tools)
 
-#### Content Reading (8 tools)
+| Tool                  | Actions                                    | Description                                       |
+| --------------------- | ------------------------------------------ | ------------------------------------------------- |
+| `social_relationship` | follow, unfollow, mute, unmute             | Manage social relationships with other accounts   |
+| `social_info`         | get_followers, get_following, get_follow_count | Get social statistics and lists               |
 
-| Tool                        | Description                                              |
-| --------------------------- | -------------------------------------------------------- |
-| `get_post_content`          | Get a specific post by author and permlink               |
-| `get_posts_by_tag`          | Get posts filtered by tag (trending, hot, created, etc.) |
-| `get_posts_by_user`         | Get posts from a user's blog or feed                     |
-| `get_content_replies`       | Get all replies/comments on a post                       |
-| `get_active_votes`          | Get all votes on a post with voter details               |
-| `get_reblogged_by`          | Get list of accounts that reblogged a post               |
-| `get_account_notifications` | Get account notifications (mentions, replies, votes)     |
-| `get_discussion`            | Get full threaded discussion for a post                  |
+#### Communities (2 tools)
 
-#### Content Writing (5 tools)
+| Tool                   | Actions                              | Description                        |
+| ---------------------- | ------------------------------------ | ---------------------------------- |
+| `community_membership` | subscribe, unsubscribe, get_subscribers | Manage community membership     |
+| `community_info`       | get_community, list_communities      | Get community information          |
 
-| Tool             | Key     | Description                             |
-| ---------------- | ------- | --------------------------------------- |
-| `create_post`    | Posting | Create a new blog post                  |
-| `create_comment` | Posting | Comment on a post or reply to a comment |
-| `update_post`    | Posting | Edit an existing post or comment        |
-| `delete_comment` | Posting | Delete a post or comment                |
-| `vote_on_post`   | Posting | Upvote or downvote content              |
+#### Content (3 tools)
 
-#### Social (8 tools)
+| Tool                | Actions                                           | Description                                    |
+| ------------------- | ------------------------------------------------- | ---------------------------------------------- |
+| `get_posts`         | by_tag, by_user, single                           | Get posts by tag, user, or specific post       |
+| `content_manage`    | create_post, create_comment, update, delete       | Create, update, and delete content             |
+| `content_engagement`| vote, reblog, get_replies, get_votes, get_reblogged_by | Engage with content                      |
 
-| Tool               | Key     | Description                          |
-| ------------------ | ------- | ------------------------------------ |
-| `get_followers`    | -       | Get list of followers for an account |
-| `get_following`    | -       | Get list of accounts a user follows  |
-| `get_follow_count` | -       | Get follower/following counts        |
-| `follow_account`   | Posting | Follow an account                    |
-| `unfollow_account` | Posting | Unfollow an account                  |
-| `mute_account`     | Posting | Mute an account                      |
-| `unmute_account`   | Posting | Unmute an account                    |
-| `reblog_post`      | Posting | Reblog (resteem) a post              |
+#### Account & Messaging (2 tools)
 
-#### Communities (5 tools)
+| Tool           | Actions                                           | Description                                |
+| -------------- | ------------------------------------------------- | ------------------------------------------ |
+| `account_info` | get_info, get_history, get_delegations, get_notifications | Get account information            |
+| `messaging`    | encrypt, decrypt, send, get_messages              | Encrypted messaging operations             |
 
-| Tool                        | Key     | Description                   |
-| --------------------------- | ------- | ----------------------------- |
-| `get_community`             | -       | Get community details         |
-| `list_communities`          | -       | List and search communities   |
-| `get_community_subscribers` | -       | Get community subscriber list |
-| `subscribe_community`       | Posting | Subscribe to a community      |
-| `unsubscribe_community`     | Posting | Unsubscribe from a community  |
+#### DeFi (4 tools)
 
-#### Cryptography (2 tools)
+| Tool          | Actions                                              | Description                           |
+| ------------- | ---------------------------------------------------- | ------------------------------------- |
+| `staking`     | power_up, power_down, cancel_power_down, delegate_hp, undelegate_hp | HP staking operations |
+| `savings`     | deposit, withdraw, cancel_withdraw, get_withdrawals  | Savings account operations            |
+| `conversions` | convert_hbd, collateralized_convert, get_requests, get_price_feed | HBD/HIVE conversions |
+| `rewards`     | claim, get_fund_info, get_pending                    | Rewards operations                    |
 
-| Tool               | Description                             |
-| ------------------ | --------------------------------------- |
-| `sign_message`     | Sign a message with a Hive private key  |
-| `verify_signature` | Verify a signature against a public key |
+#### Resource Credits (1 tool)
 
-#### Encrypted Messaging (4 tools)
+| Tool               | Actions              | Description                    |
+| ------------------ | -------------------- | ------------------------------ |
+| `resource_credits` | get_rc, delegate_rc  | RC info and delegation         |
 
-| Tool                     | Key           | Description                               |
-| ------------------------ | ------------- | ----------------------------------------- |
-| `encrypt_message`        | Memo          | Encrypt a message for another account     |
-| `decrypt_message`        | Memo          | Decrypt a received encrypted message      |
-| `send_encrypted_message` | Active + Memo | Send encrypted message via token transfer |
-| `get_encrypted_messages` | Memo          | Retrieve and decrypt message history      |
+#### Hive Engine (4 tools)
 
-#### Token Transfers (1 tool)
+| Tool        | Actions                                              | Description                     |
+| ----------- | ---------------------------------------------------- | ------------------------------- |
+| `he_tokens` | balance, info, list, transfer, stake, unstake, delegate, undelegate | Token operations |
+| `he_market` | orderbook, history, metrics, open_orders, buy, sell, cancel | Market trading       |
+| `he_nfts`   | collection, info, properties, sell_orders, transfer, sell, cancel_sale, buy | NFT operations |
+| `he_pools`  | info, list, estimate_swap, swap, add_liquidity, remove_liquidity | Liquidity pools   |
 
-| Tool         | Key    | Description                         |
-| ------------ | ------ | ----------------------------------- |
-| `send_token` | Active | Send HIVE or HBD to another account |
+#### Standalone Tools (4 tools)
 
-#### DeFi - Staking (5 tools)
-
-| Tool                | Key    | Description                          |
-| ------------------- | ------ | ------------------------------------ |
-| `power_up`          | Active | Convert HIVE to Hive Power (HP)      |
-| `power_down`        | Active | Start power down (13-week unstaking) |
-| `cancel_power_down` | Active | Cancel ongoing power down            |
-| `delegate_hp`       | Active | Delegate HP to another account       |
-| `undelegate_hp`     | Active | Remove HP delegation                 |
-
-#### DeFi - Rewards (3 tools)
-
-| Tool                  | Key     | Description                           |
-| --------------------- | ------- | ------------------------------------- |
-| `claim_rewards`       | Posting | Claim pending author/curation rewards |
-| `get_reward_fund`     | -       | Get reward pool information           |
-| `get_pending_rewards` | -       | Get unclaimed rewards for an account  |
-
-#### DeFi - Savings (4 tools)
-
-| Tool                      | Key    | Description                             |
-| ------------------------- | ------ | --------------------------------------- |
-| `transfer_to_savings`     | Active | Deposit to savings (HBD earns ~20% APR) |
-| `transfer_from_savings`   | Active | Withdraw from savings (3-day wait)      |
-| `cancel_savings_withdraw` | Active | Cancel pending withdrawal               |
-| `get_savings_withdrawals` | -      | Get pending withdrawals                 |
-
-#### DeFi - Conversions (4 tools)
-
-| Tool                      | Key    | Description                              |
-| ------------------------- | ------ | ---------------------------------------- |
-| `convert_hbd`             | Active | Convert HBD to HIVE (3.5-day conversion) |
-| `collateralized_convert`  | Active | Instant HBD→HIVE with collateral         |
-| `get_conversion_requests` | -      | Get pending conversions                  |
-| `get_current_price_feed`  | -      | Get HBD/HIVE median price                |
-
-#### Resource Credits (2 tools)
-
-| Tool              | Key     | Description                    |
-| ----------------- | ------- | ------------------------------ |
-| `get_rc_accounts` | -       | Get RC info for accounts       |
-| `delegate_rc`     | Posting | Delegate RC to another account |
-
-#### Hive Engine - Tokens (8 tools)
-
-| Tool                   | Key    | Description                              |
-| ---------------------- | ------ | ---------------------------------------- |
-| `get_he_token_balance` | -      | Get HE token balances for an account     |
-| `get_he_token_info`    | -      | Get token details (supply, issuer, etc.) |
-| `get_he_tokens_list`   | -      | List all tokens with filtering           |
-| `transfer_he_token`    | Active | Transfer HE tokens                       |
-| `stake_he_token`       | Active | Stake tokens for voting power            |
-| `unstake_he_token`     | Active | Begin unstaking (cooldown applies)       |
-| `delegate_he_token`    | Active | Delegate staked tokens                   |
-| `undelegate_he_token`  | Active | Remove token delegation                  |
-
-#### Hive Engine - Market (7 tools)
-
-| Tool                      | Key    | Description                     |
-| ------------------------- | ------ | ------------------------------- |
-| `get_he_market_orderbook` | -      | Get buy/sell orders for a token |
-| `get_he_market_history`   | -      | Get recent trades               |
-| `get_he_market_metrics`   | -      | Get price, volume, market cap   |
-| `get_he_open_orders`      | -      | Get user's open orders          |
-| `place_he_buy_order`      | Active | Place limit buy order           |
-| `place_he_sell_order`     | Active | Place limit sell order          |
-| `cancel_he_order`         | Active | Cancel an open order            |
-
-#### Hive Engine - NFTs (8 tools)
-
-| Tool                     | Key    | Description                  |
-| ------------------------ | ------ | ---------------------------- |
-| `get_he_nft_collection`  | -      | Get NFTs owned by an account |
-| `get_he_nft_info`        | -      | Get NFT details              |
-| `get_he_nft_properties`  | -      | Get NFT collection schema    |
-| `get_he_nft_sell_orders` | -      | Get NFTs for sale            |
-| `transfer_he_nft`        | Active | Transfer NFTs                |
-| `sell_he_nft`            | Active | List NFTs for sale           |
-| `cancel_he_nft_sale`     | Active | Cancel NFT listing           |
-| `buy_he_nft`             | Active | Purchase NFTs                |
-
-#### Hive Engine - Liquidity Pools (6 tools)
-
-| Tool                  | Key    | Description                    |
-| --------------------- | ------ | ------------------------------ |
-| `get_he_pool_info`    | -      | Get pool details               |
-| `get_he_pools_list`   | -      | List all liquidity pools       |
-| `estimate_he_swap`    | -      | Calculate swap output/slippage |
-| `swap_he_tokens`      | Active | Swap tokens via DEX            |
-| `add_he_liquidity`    | Active | Add liquidity to a pool        |
-| `remove_he_liquidity` | Active | Remove liquidity from a pool   |
+| Tool                 | Description                                          |
+| -------------------- | ---------------------------------------------------- |
+| `send_token`         | Send HIVE or HBD to another account                  |
+| `sign_message`       | Sign a message with a Hive private key               |
+| `verify_signature`   | Verify a signature against a public key              |
+| `get_chain_properties` | Get current blockchain properties                  |
+| `get_discussion`     | Get full threaded discussion for a post              |
+| `reblog_post`        | Reblog (resteem) a post (convenience duplicate)      |
 
 ## Debugging with MCP Inspector
 
@@ -379,11 +276,11 @@ npm run build
 
 ## Tool Reference
 
-For detailed parameter documentation for all 84 tools, see [docs/TOOLS.md](docs/TOOLS.md).
+For detailed parameter documentation for all tools, see [docs/TOOLS.md](docs/TOOLS.md).
 
 ## Acknowledgments
 
-This project was originally created by [Gregory Luneau (@gluneau)](https://github.com/gluneau/hive-mcp-server) using the @hiveio/dhive library. The codebase has been extensively rewritten by [@jarvie](https://github.com/scottjarvie) to use the modern [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) library and expanded from 17 to 84 tools, adding comprehensive support for:
+This project was originally created by [Gregory Luneau (@gluneau)](https://github.com/gluneau/hive-mcp-server) using the @hiveio/dhive library. The codebase has been extensively rewritten by [@jarvie](https://github.com/scottjarvie) to use the modern [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) library and consolidated into 22 action-based tools (from 74 individual tools), adding comprehensive support for:
 
 - Social features (follow, mute, reblog)
 - Community interactions

@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for creating, updating, and deleting posts/comments on Hive.
  * Purpose: Broadcast content operations using WAX transaction builder.
- * Key elements: createPost, createComment, updatePost, deleteComment
+ * Key elements: contentManage (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Phase 3 - Added update and delete operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,90 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for content management
+ * Handles: create_post, create_comment, update, delete
+ */
+export async function contentManage(
+  params: {
+    action: 'create_post' | 'create_comment' | 'update' | 'delete';
+    title?: string;
+    body?: string;
+    tags?: string[];
+    parent_author?: string;
+    parent_permlink?: string;
+    author?: string;
+    permlink?: string;
+    beneficiaries?: { account: string; weight: number }[] | null;
+    max_accepted_payout?: string;
+    percent_hbd?: number;
+    allow_votes?: boolean;
+    allow_curation_rewards?: boolean;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'create_post':
+      if (!params.title || !params.body) {
+        return errorResponse('Error: Title and body are required for create_post action');
+      }
+      return createPost({
+        title: params.title,
+        body: params.body,
+        tags: params.tags || ['blog'],
+        beneficiaries: params.beneficiaries,
+        permalink: params.permlink,
+        max_accepted_payout: params.max_accepted_payout,
+        percent_hbd: params.percent_hbd,
+        allow_votes: params.allow_votes ?? true,
+        allow_curation_rewards: params.allow_curation_rewards ?? true,
+      });
+    case 'create_comment':
+      if (!params.parent_author || !params.parent_permlink || !params.body) {
+        return errorResponse('Error: parent_author, parent_permlink, and body are required for create_comment action');
+      }
+      return createComment({
+        parent_author: params.parent_author,
+        parent_permlink: params.parent_permlink,
+        body: params.body,
+        permalink: params.permlink,
+        beneficiaries: params.beneficiaries,
+        max_accepted_payout: params.max_accepted_payout,
+        percent_hbd: params.percent_hbd,
+        allow_votes: params.allow_votes ?? true,
+        allow_curation_rewards: params.allow_curation_rewards ?? true,
+      });
+    case 'update':
+      if (!params.author || !params.permlink || !params.body) {
+        return errorResponse('Error: Author, permlink, and body are required for update action');
+      }
+      return updatePost({
+        author: params.author,
+        permlink: params.permlink,
+        title: params.title,
+        body: params.body,
+        tags: params.tags,
+      });
+    case 'delete':
+      if (!params.author || !params.permlink) {
+        return errorResponse('Error: Author and permlink are required for delete action');
+      }
+      return deleteComment({
+        author: params.author,
+        permlink: params.permlink,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Interface for existing post data from API
 interface ExistingPost {

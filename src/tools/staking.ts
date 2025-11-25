@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for Hive Power staking operations.
  * Purpose: Power up/down HIVE and delegate HP using WAX transaction builder.
- * Key elements: powerUp, powerDown, cancelPowerDown, delegateHp, undelegateHp
+ * Key elements: staking (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Phase 4 - DeFi operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,54 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { getGlobalProperties, hpToVests } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all staking operations
+ * Handles: power_up, power_down, cancel_power_down, delegate_hp, undelegate_hp
+ */
+export async function staking(
+  params: {
+    action: 'power_up' | 'power_down' | 'cancel_power_down' | 'delegate_hp' | 'undelegate_hp';
+    amount?: number;
+    to?: string;
+    delegatee?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'power_up':
+      if (!params.amount) {
+        return errorResponse('Error: Amount is required for power_up action');
+      }
+      return powerUp({ amount: params.amount, to: params.to });
+    case 'power_down':
+      if (!params.amount) {
+        return errorResponse('Error: Amount is required for power_down action');
+      }
+      return powerDown({ amount: params.amount });
+    case 'cancel_power_down':
+      return cancelPowerDown({});
+    case 'delegate_hp':
+      if (!params.delegatee || !params.amount) {
+        return errorResponse('Error: Delegatee and amount are required for delegate_hp action');
+      }
+      return delegateHp({ delegatee: params.delegatee, amount: params.amount });
+    case 'undelegate_hp':
+      if (!params.delegatee) {
+        return errorResponse('Error: Delegatee is required for undelegate_hp action');
+      }
+      return undelegateHp({ delegatee: params.delegatee });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Power Up - Convert HIVE to Hive Power (HP)

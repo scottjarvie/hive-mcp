@@ -3,9 +3,9 @@
  * 
  * Summary: Tools for Hive Engine NFT operations.
  * Purpose: Query NFT collections, transfer, buy/sell NFTs.
- * Key elements: getHENFTCollection, transferHENFT, sellHENFT
+ * Key elements: heNfts (consolidated dispatcher)
  * Dependencies: hive-engine-api, config, WAX client
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -20,6 +20,89 @@ import {
   findOne,
   type HENFTInstance,
 } from '../utils/hive-engine-api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all Hive Engine NFT operations
+ * Handles: collection, info, properties, sell_orders, transfer, sell, cancel_sale, buy
+ */
+export async function heNfts(
+  params: {
+    action: 'collection' | 'info' | 'properties' | 'sell_orders' | 'transfer' | 'sell' | 'cancel_sale' | 'buy';
+    symbol?: string;
+    account?: string;
+    id?: string;
+    ids?: string[];
+    to?: string;
+    memo?: string;
+    price?: string;
+    priceSymbol?: string;
+    marketAccount?: string;
+    limit?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'collection':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for collection action');
+      }
+      return getHENFTCollection({ account: params.account, symbol: params.symbol });
+    case 'info':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for info action');
+      }
+      return getHENFTInfo({ symbol: params.symbol, id: params.id });
+    case 'properties':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for properties action');
+      }
+      return getHENFTProperties({ symbol: params.symbol });
+    case 'sell_orders':
+      if (!params.symbol) {
+        return errorResponse('Error: Symbol is required for sell_orders action');
+      }
+      return getHENFTSellOrders({ symbol: params.symbol, limit: params.limit || 100 });
+    case 'transfer':
+      if (!params.symbol || !params.ids || !params.to) {
+        return errorResponse('Error: Symbol, ids, and to are required for transfer action');
+      }
+      return transferHENFT({
+        symbol: params.symbol,
+        ids: params.ids,
+        to: params.to,
+        memo: params.memo || '',
+      });
+    case 'sell':
+      if (!params.symbol || !params.ids || !params.price) {
+        return errorResponse('Error: Symbol, ids, and price are required for sell action');
+      }
+      return sellHENFT({
+        symbol: params.symbol,
+        ids: params.ids,
+        price: params.price,
+        priceSymbol: params.priceSymbol || 'SWAP.HIVE',
+      });
+    case 'cancel_sale':
+      if (!params.symbol || !params.ids) {
+        return errorResponse('Error: Symbol and ids are required for cancel_sale action');
+      }
+      return cancelHENFTSale({ symbol: params.symbol, ids: params.ids });
+    case 'buy':
+      if (!params.symbol || !params.ids) {
+        return errorResponse('Error: Symbol and ids are required for buy action');
+      }
+      return buyHENFT({
+        symbol: params.symbol,
+        ids: params.ids,
+        marketAccount: params.marketAccount || 'nftmarket',
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
 
 // =============================================================================
 // Read Operations

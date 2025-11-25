@@ -3,12 +3,33 @@
  * 
  * Summary: Zod schemas for staking/vesting operations.
  * Purpose: Input validation for power up/down and HP delegation.
- * Key elements: powerUpSchema, powerDownSchema, delegateHpSchema
+ * Key elements: stakingSchema (consolidated)
  * Dependencies: zod
- * Last update: Phase 4 - DeFi operations
+ * Last update: Tool consolidation - grouped related staking operations
  */
 
 import { z } from 'zod';
+
+// =========================================================================
+// CONSOLIDATED SCHEMA
+// =========================================================================
+
+/**
+ * Consolidated schema for all staking operations
+ * Combines: power_up, power_down, cancel_power_down, delegate_hp, undelegate_hp
+ */
+export const stakingSchema = z.object({
+  action: z.enum(['power_up', 'power_down', 'cancel_power_down', 'delegate_hp', 'undelegate_hp']).describe(
+    'Action to perform: power_up, power_down, cancel_power_down, delegate_hp, or undelegate_hp'
+  ),
+  amount: z.number().positive().optional().describe('Amount of HIVE/HP (for power_up, power_down, delegate_hp)'),
+  to: z.string().optional().describe('Target account (for power_up to another account)'),
+  delegatee: z.string().optional().describe('Account to delegate to or undelegate from (for delegate_hp, undelegate_hp)'),
+});
+
+// =========================================================================
+// LEGACY SCHEMAS (kept for internal use by dispatchers)
+// =========================================================================
 
 // Schema for power_up tool (transfer_to_vesting)
 export const powerUpSchema = z.object({

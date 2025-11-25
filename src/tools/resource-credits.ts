@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for Resource Credits operations.
  * Purpose: RC delegation and balance queries.
- * Key elements: delegateRc, getRcAccounts
+ * Key elements: resourceCredits (consolidated dispatcher)
  * Dependencies: @hiveio/wax, config/client, utils/api, utils/response, utils/error
- * Last update: Phase 3 - Resource Credits operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,42 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { jsonRpcCall } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for Resource Credits operations
+ * Handles: get_rc, delegate_rc
+ */
+export async function resourceCredits(
+  params: {
+    action: 'get_rc' | 'delegate_rc';
+    accounts?: string[];
+    to?: string;
+    max_rc?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'get_rc':
+      if (!params.accounts || params.accounts.length === 0) {
+        return errorResponse('Error: Accounts array is required for get_rc action');
+      }
+      return getRcAccounts({ accounts: params.accounts });
+    case 'delegate_rc':
+      if (!params.to || params.max_rc === undefined) {
+        return errorResponse('Error: "to" account and max_rc are required for delegate_rc action');
+      }
+      return delegateRc({ to: params.to, max_rc: params.max_rc });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 // Interface for RC account info from API
 interface RcAccount {

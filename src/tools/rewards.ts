@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for claiming rewards and querying reward info.
  * Purpose: Claim pending author/curation rewards and get reward pool data.
- * Key elements: claimRewards, getRewardFund, getPendingRewards
+ * Key elements: rewards (consolidated dispatcher)
  * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Phase 4 - DeFi operations
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,40 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi, callDatabaseApi, vestsToHp, getGlobalProperties } from '../utils/api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all rewards operations
+ * Handles: claim, get_fund_info, get_pending
+ */
+export async function rewards(
+  params: {
+    action: 'claim' | 'get_fund_info' | 'get_pending';
+    account?: string;
+    fund_name?: string;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'claim':
+      return claimRewards({});
+    case 'get_fund_info':
+      return getRewardFund({ fund_name: params.fund_name || 'post' });
+    case 'get_pending':
+      if (!params.account) {
+        return errorResponse('Error: Account is required for get_pending action');
+      }
+      return getPendingRewards({ account: params.account });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Claim Rewards - Claim all pending author and curation rewards

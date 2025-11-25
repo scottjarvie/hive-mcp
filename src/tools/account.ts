@@ -3,9 +3,9 @@
  * 
  * Summary: Provides tools for fetching Hive account information, history, and delegations.
  * Purpose: Read-only account data retrieval from the Hive blockchain.
- * Key elements: getAccountInfo, getAccountHistory, getVestingDelegations
- * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api
- * Last update: Migration from dhive to WAX library
+ * Key elements: accountInfo (consolidated dispatcher)
+ * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, content-advanced.js
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -13,6 +13,59 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+import { getAccountNotifications } from './content-advanced.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for account info queries
+ * Handles: get_info, get_history, get_delegations, get_notifications
+ */
+export async function accountInfo(
+  params: {
+    action: 'get_info' | 'get_history' | 'get_delegations' | 'get_notifications';
+    username?: string;
+    limit?: number;
+    operation_filter?: string[];
+    from?: string;
+    last_id?: number;
+  }
+): Promise<Response> {
+  if (!params.username) {
+    return errorResponse('Error: Username is required');
+  }
+
+  switch (params.action) {
+    case 'get_info':
+      return getAccountInfo({ username: params.username });
+    case 'get_history':
+      return getAccountHistory({
+        username: params.username,
+        limit: params.limit || 10,
+        operation_filter: params.operation_filter,
+      });
+    case 'get_delegations':
+      return getVestingDelegations({
+        username: params.username,
+        limit: params.limit || 100,
+        from: params.from,
+      });
+    case 'get_notifications':
+      return getAccountNotifications({
+        account: params.username,
+        limit: params.limit || 50,
+        last_id: params.last_id,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
+
+// =============================================================================
+// INDIVIDUAL TOOL IMPLEMENTATIONS
+// =============================================================================
 
 /**
  * Get account information

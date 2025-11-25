@@ -3,9 +3,9 @@
  * 
  * Summary: Exports all schemas in the format needed by McpServer.
  * Purpose: Central schema export point for tool registration.
- * Key elements: Schema shape extraction and exports
+ * Key elements: Schema shape extraction and exports (consolidated + legacy)
  * Dependencies: zod, schema modules
- * Last update: Phase 3 - Added content-advanced and resource-credits schemas
+ * Last update: Tool consolidation - added consolidated schema exports
  */
 
 import { z } from 'zod';
@@ -37,11 +37,53 @@ function getZodShape<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
   return schema._def.shape();
 }
 
+// =============================================================================
+// CONSOLIDATED SCHEMAS (New - for reduced tool count)
+// =============================================================================
+
+// Social consolidated schemas
+export const socialRelationshipSchema = getZodShape(socialSchemas.socialRelationshipSchema);
+export const socialInfoSchema = getZodShape(socialSchemas.socialInfoSchema);
+
+// Community consolidated schemas
+export const communityMembershipSchema = getZodShape(communitySchemas.communityMembershipSchema);
+export const communityInfoSchema = getZodShape(communitySchemas.communityInfoSchema);
+
+// Content consolidated schemas
+export const getPostsSchema = getZodShape(contentSchemas.getPostsSchema);
+export const contentManageSchema = getZodShape(contentSchemas.contentManageSchema);
+export const contentEngagementSchema = getZodShape(contentAdvancedSchemas.contentEngagementSchema);
+
+// Account consolidated schema
+export const accountInfoSchema = getZodShape(accountSchemas.accountInfoSchema);
+
+// Messaging consolidated schema
+export const messagingSchema = getZodShape(messagingSchemas.messagingSchema);
+
+// Resource Credits consolidated schema
+export const resourceCreditsSchema = getZodShape(resourceCreditsSchemas.resourceCreditsSchema);
+
+// DeFi consolidated schemas
+export const stakingSchema = getZodShape(stakingSchemas.stakingSchema);
+export const savingsSchema = getZodShape(savingsSchemas.savingsSchema);
+export const conversionsSchema = getZodShape(conversionsSchemas.conversionsSchema);
+export const rewardsSchema = getZodShape(rewardsSchemas.rewardsSchema);
+
+// Hive Engine consolidated schemas
+export const heTokensSchema = getZodShape(heTokenSchemas.heTokensSchema);
+export const heMarketSchema = getZodShape(heMarketSchemas.heMarketSchema);
+export const heNftsSchema = getZodShape(heNftSchemas.heNftsSchema);
+export const hePoolsSchema = getZodShape(hePoolSchemas.hePoolsSchema);
+
+// =============================================================================
+// LEGACY SCHEMAS (kept for backward compatibility and internal dispatchers)
+// =============================================================================
+
 // Prompt schemas
 export const createPostPromptSchema = getZodShape(promptsSchemas.createPostSchema);
 export const analyzeAccountSchema = getZodShape(promptsSchemas.analyzeAccountSchema);
 
-// Messaging schemas
+// Messaging schemas (legacy)
 export const encryptMessageSchema = getZodShape(messagingSchemas.encryptMessageSchema);
 export const decryptMessageSchema = getZodShape(messagingSchemas.decryptMessageSchema);
 export const sendEncryptedMessageSchema = getZodShape(messagingSchemas.sendEncryptedMessageSchema);

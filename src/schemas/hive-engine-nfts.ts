@@ -3,12 +3,47 @@
  * 
  * Summary: Zod schemas for Hive Engine NFT operations.
  * Purpose: Input validation for NFT queries and transfers.
- * Key elements: getHENFTCollectionSchema, transferHENFTSchema
+ * Key elements: heNftsSchema (consolidated)
  * Dependencies: zod
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - grouped related HE NFT operations
  */
 
 import { z } from 'zod';
+
+// =========================================================================
+// CONSOLIDATED SCHEMA
+// =========================================================================
+
+/**
+ * Consolidated schema for all Hive Engine NFT operations
+ * Combines: collection, info, properties, sell_orders, transfer, sell, cancel_sale, buy
+ */
+export const heNftsSchema = z.object({
+  action: z.enum(['collection', 'info', 'properties', 'sell_orders', 'transfer', 'sell', 'cancel_sale', 'buy']).describe(
+    'Action: collection, info, properties, sell_orders, transfer, sell, cancel_sale, or buy'
+  ),
+  // Common
+  symbol: z.string().optional().describe('NFT collection symbol'),
+  // For collection
+  account: z.string().optional().describe('Account to get NFT collection for'),
+  // For info
+  id: z.string().optional().describe('Specific NFT instance ID (for info)'),
+  // For transfer, sell, cancel_sale, buy
+  ids: z.array(z.string()).optional().describe('Array of NFT instance IDs'),
+  to: z.string().optional().describe('Recipient account (for transfer)'),
+  memo: z.string().optional().default('').describe('Optional memo (for transfer)'),
+  // For sell
+  price: z.string().optional().describe('Price per NFT (for sell)'),
+  priceSymbol: z.string().optional().default('SWAP.HIVE').describe('Price token symbol (for sell)'),
+  // For buy
+  marketAccount: z.string().optional().default('nftmarket').describe('NFT market account (for buy)'),
+  // For sell_orders
+  limit: z.number().min(1).max(500).optional().default(100).describe('Max results (for sell_orders)'),
+});
+
+// =========================================================================
+// LEGACY SCHEMAS (kept for internal use by dispatchers)
+// =========================================================================
 
 // Schema for get_he_nft_collection tool
 export const getHENFTCollectionSchema = z.object({

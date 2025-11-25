@@ -3,9 +3,9 @@
  * 
  * Summary: Tools for Hive Engine liquidity pool (Diesel Pools) operations.
  * Purpose: Query pools, estimate swaps, execute swaps, manage liquidity.
- * Key elements: getHEPoolInfo, estimateHESwap, swapHETokens, addHELiquidity
+ * Key elements: hePools (consolidated dispatcher)
  * Dependencies: hive-engine-api, config, WAX client
- * Last update: Phase 5 - Hive Engine integration
+ * Last update: Tool consolidation - added dispatcher function
  */
 
 import { getChain } from '../config/client.js';
@@ -18,6 +18,84 @@ import {
   getPools,
   type HEPool,
 } from '../utils/hive-engine-api.js';
+
+// =============================================================================
+// CONSOLIDATED DISPATCHER
+// =============================================================================
+
+/**
+ * Consolidated dispatcher for all Hive Engine pool operations
+ * Handles: info, list, estimate_swap, swap, add_liquidity, remove_liquidity
+ */
+export async function hePools(
+  params: {
+    action: 'info' | 'list' | 'estimate_swap' | 'swap' | 'add_liquidity' | 'remove_liquidity';
+    tokenPair?: string;
+    tokenSymbol?: string;
+    tokenAmount?: string;
+    minAmountOut?: string;
+    baseQuantity?: string;
+    quoteQuantity?: string;
+    maxSlippage?: string;
+    maxDeviation?: string;
+    shares?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<Response> {
+  switch (params.action) {
+    case 'info':
+      if (!params.tokenPair) {
+        return errorResponse('Error: tokenPair is required for info action');
+      }
+      return getHEPoolInfo({ tokenPair: params.tokenPair });
+    case 'list':
+      return getHEPoolsList({
+        limit: params.limit || 100,
+        offset: params.offset || 0,
+      });
+    case 'estimate_swap':
+      if (!params.tokenPair || !params.tokenSymbol || !params.tokenAmount) {
+        return errorResponse('Error: tokenPair, tokenSymbol, and tokenAmount are required for estimate_swap action');
+      }
+      return estimateHESwap({
+        tokenPair: params.tokenPair,
+        tokenSymbol: params.tokenSymbol,
+        tokenAmount: params.tokenAmount,
+      });
+    case 'swap':
+      if (!params.tokenPair || !params.tokenSymbol || !params.tokenAmount) {
+        return errorResponse('Error: tokenPair, tokenSymbol, and tokenAmount are required for swap action');
+      }
+      return swapHETokens({
+        tokenPair: params.tokenPair,
+        tokenSymbol: params.tokenSymbol,
+        tokenAmount: params.tokenAmount,
+        minAmountOut: params.minAmountOut,
+      });
+    case 'add_liquidity':
+      if (!params.tokenPair || !params.baseQuantity || !params.quoteQuantity) {
+        return errorResponse('Error: tokenPair, baseQuantity, and quoteQuantity are required for add_liquidity action');
+      }
+      return addHELiquidity({
+        tokenPair: params.tokenPair,
+        baseQuantity: params.baseQuantity,
+        quoteQuantity: params.quoteQuantity,
+        maxSlippage: params.maxSlippage || '0.005',
+        maxDeviation: params.maxDeviation || '0.01',
+      });
+    case 'remove_liquidity':
+      if (!params.tokenPair || !params.shares) {
+        return errorResponse('Error: tokenPair and shares are required for remove_liquidity action');
+      }
+      return removeHELiquidity({
+        tokenPair: params.tokenPair,
+        shares: params.shares,
+      });
+    default:
+      return errorResponse(`Unknown action: ${params.action}`);
+  }
+}
 
 // =============================================================================
 // Read Operations
