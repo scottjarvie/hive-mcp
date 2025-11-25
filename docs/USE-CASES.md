@@ -106,65 +106,65 @@ These are **read-only operations** that anyone can perform without authenticatio
 #### 1.1.1 Get account details
 
 - **Prompt:** "What's the account balance and details for @jarvie?"
-- **Val:** 9.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Tool returned comprehensive data: HIVE/HBD balances, savings, HP, delegations, profile info, activity dates. All requested info obtained in single call.
+- **Recommendation:** Keep
 
 #### 1.1.2 View account history
 
 - **Prompt:** "Get the transaction history for @blocktrades"
-- **Val:** 7.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 7.5 | **Res:** 8.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Returns recent operations with human-readable timestamps, tx IDs, and details. For witness accounts, history dominated by producer_rewards. operation_filter param available for filtering.
+- **Recommendation:** Keep
 
 #### 1.1.3 Check pending rewards
 
 - **Prompt:** "What rewards does @jarvie have pending to claim?"
-- **Val:** 8.0 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 8.0 | **Exp:** 8.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Direct answer with clear breakdown of HIVE, HBD, and vesting rewards. HP equivalent helpfully calculated. Single call, perfect response.
+- **Recommendation:** Keep
 
 #### 1.1.4 Get account delegations
 
 - **Prompt:** "Show me who @blocktrades has delegated HP to"
-- **Val:** 7.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 7.5 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Returns all outgoing delegations with delegatee, VESTS amount, and delegation start date. Clear single-call response.
+- **Recommendation:** Keep (could add HP equivalent but VESTS sufficient)
 
 #### 1.1.5 View account notifications
 
 - **Prompt:** "What are @jarvie's recent notifications?"
-- **Val:** 6.0 | **Exp:** 6.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 6.0 | **Exp:** 6.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Returns notifications with type_summary, human-readable timestamps, messages, URLs, and scores. Exceeded expectations with comprehensive metadata.
+- **Recommendation:** Keep
 
 #### 1.1.6 Get Resource Credits status
 
 - **Prompt:** "What are @jarvie-dev's current Resource Credits?"
-- **Val:** 8.0 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 8.0 | **Exp:** 8.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Returns max RC, current RC, percentage, RC delegations in/out, and last update. Complete and clear response.
+- **Recommendation:** Keep
 
 #### 1.1.7 Analyze account activity ⭐
 
 - **Prompt:** "Analyze @jarvie's posting patterns over the last month"
-- **Val:** 9.0 | **Exp:** 5.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** Multi-call operation, may need MCP enhancement
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 5.5 | **Res:** 7.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Required 2 calls (get_posts + get_history). Tools lack time-range filtering, so AI must manually filter. Got post frequency, community spread, and comment activity data. Analysis synthesis done by AI.
+- **Recommendation:** Enhance - add date-range filtering to posts/history tools
 
 #### 1.1.8 Check voting power
 
 - **Prompt:** "What is @blocktrades's current voting power?"
-- **Val:** 7.5 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 8.0 | **Res:** 7.5 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Tool returns raw manabar data (current_mana, last_update_time) but not pre-calculated percentage. AI must calculate: current_mana/max_vp \* 100. Data available but requires interpretation.
+- **Recommendation:** Enhance - add calculated voting_power_percent field
 
 #### 1.1.9 Compare accounts ⭐
 
 - **Prompt:** "Compare the HP and following of @jarvie vs @asgarth"
-- **Val:** 8.5 | **Exp:** 5.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** Requires multiple tool calls
-- **Recommendation:** \_
+- **Val:** 8.5 | **Exp:** 5.5 | **Res:** 8.5 | **Tools:** 4 | **Status:** ✅
+- **Observations:** Required 4 parallel calls (2x account_info + 2x social_info). AI successfully synthesized comparison table with HP, followers, following, post counts. Worked better than expected.
+- **Recommendation:** Keep (could Enhance with compare tool but parallel calls work well)
 
 ---
 
@@ -228,7 +228,7 @@ These are **read-only operations** that anyone can perform without authenticatio
 
 #### 1.2.9 Search posts by author ⭐
 
-- **Prompt:** "Find all posts by @jarvie about photography"
+- **Prompt:** "Find all posts by @asgarth about photography"
 - **Val:** 9.0 | **Exp:** 3.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** MCP doesn't have text search capability
 - **Recommendation:** \_
@@ -1224,12 +1224,12 @@ These are complex use cases combining multiple operations.
 
 | Section              | Total   | Tested | Avg Result |
 | -------------------- | ------- | ------ | ---------- |
-| 1. Hive L1 (No Keys) | 32      | 0      | -          |
+| 1. Hive L1 (No Keys) | 32      | 9      | 8.5        |
 | 2. Hive L1 (Keys)    | 34      | 0      | -          |
 | 3. HE L2 (No Keys)   | 19      | 0      | -          |
 | 4. HE L2 (Keys)      | 16      | 0      | -          |
 | 5. Advanced          | 21      | 0      | -          |
-| **Total**            | **122** | **0**  | **-**      |
+| **Total**            | **122** | **9**  | **8.5**    |
 
 ---
 
