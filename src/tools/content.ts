@@ -5,13 +5,13 @@
  * Purpose: Read-only content retrieval from the Hive blockchain.
  * Key elements: getPosts (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api, utils/date
- * Last update: Added date formatting and comments category support
+ * Last update: Added reblog support with bridge.get_account_posts API
  */
 
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
-import { callCondenserApi } from '../utils/api.js';
+import { callCondenserApi, callBridgeApi } from '../utils/api.js';
 import { formatDate } from '../utils/date.js';
 
 // =============================================================================
@@ -182,10 +182,37 @@ export async function getPostsByTag(
   }
 }
 
+// Bridge API post interface (richer data than condenser API)
+interface BridgePost {
+  title: string;
+  author: string;
+  permlink: string;
+  created: string;
+  updated: string;
+  body?: string;
+  category: string;
+  author_reputation: number;
+  stats?: {
+    total_votes: number;
+    gray: boolean;
+    hide: boolean;
+  };
+  payout?: number;
+  pending_payout_value?: string;
+  reblogged_by?: string[];  // Array of accounts that reblogged (when in blog view)
+}
+
 /**
  * Get posts by user
- * Retrieves posts authored by, in the feed of, or comments made by a specific Hive user
- * Categories: blog (their posts), feed (posts they follow), comments (comments they made)
+ * Retrieves posts authored by, in the feed of, or comments/replies by a specific Hive user
+ * Uses bridge.get_account_posts API for better data including reblog metadata
+ * 
+ * Categories:
+ * - posts: Only posts authored by the user
+ * - blog: Blog feed (authored posts + reblogs) with reblog metadata
+ * - feed: Posts from accounts they follow
+ * - comments: Comments made by the user
+ * - replies: Replies to their posts
  */
 export async function getPostsByUser(
   params: { 
@@ -195,56 +222,76 @@ export async function getPostsByUser(
   }
 ): Promise<Response> {
   try {
-    // Map categories to API methods
-    const methodMap: Record<string, string> = {
-      blog: 'get_discussions_by_blog',
-      feed: 'get_discussions_by_feed',
-      comments: 'get_discussions_by_comments',
-    };
-    
-    const method = methodMap[params.category] || 'get_discussions_by_blog';
-    
-    // Comments API uses start_author parameter, others use tag
-    let apiParams: Record<string, unknown>;
-    if (params.category === 'comments') {
-      apiParams = {
-        start_author: params.username,
-        limit: params.limit,
-      };
-    } else {
-      apiParams = {
-        tag: params.username,
-        limit: params.limit,
-      };
+    // Use bridge.get_account_posts API which provides reblog metadata
+    const posts = await callBridgeApi<BridgePost[]>('get_account_posts', {
+      account: params.username,
+      sort: params.category,  // posts, blog, feed, comments, replies
+      limit: params.limit,
+    });
+
+    if (!posts || !Array.isArray(posts)) {
+      return successJson({
+        username: params.username,
+        category: params.category,
+        result_type: getCategoryLabel(params.category),
+        count: 0,
+        items: [],
+      });
     }
-    
-    const posts = await callCondenserApi<RawPost[]>(method, [apiParams]);
 
-    const formattedPosts: FormattedPost[] = posts.map((post) => ({
-      title: post.title || '(comment)',  // Comments often have empty titles
-      author: post.author,
-      permlink: post.permlink,
-      created: formatDate(post.created),
-      votes: post.net_votes,
-      payout: post.pending_payout_value,
-      url: `https://hive.blog/@${post.author}/${post.permlink}`,
-    }));
+    // Format posts with reblog metadata
+    const formattedPosts = posts.map((post) => {
+      // Determine if this is a reblog (author differs from queried user in blog view)
+      const isReblog = params.category === 'blog' && post.author !== params.username;
+      
+      return {
+        title: post.title || '(comment)',
+        author: post.author,
+        permlink: post.permlink,
+        created: formatDate(post.created),
+        votes: post.stats?.total_votes || 0,
+        payout: post.payout || post.pending_payout_value || '0',
+        reputation: post.author_reputation,
+        is_reblog: isReblog,
+        reblogged_by: isReblog ? params.username : null,
+        url: `https://peakd.com/@${post.author}/${post.permlink}`,
+      };
+    });
 
-    // Add context about what was fetched
-    const resultLabel = params.category === 'comments' 
-      ? 'comments' 
-      : params.category === 'feed' 
-        ? 'feed posts' 
-        : 'posts';
+    // Calculate reblog stats for blog category
+    const authoredCount = formattedPosts.filter(p => !p.is_reblog).length;
+    const reblogCount = formattedPosts.filter(p => p.is_reblog).length;
 
-    return successJson({
+    const response: Record<string, unknown> = {
       username: params.username,
       category: params.category,
-      result_type: resultLabel,
+      result_type: getCategoryLabel(params.category),
       count: formattedPosts.length,
       items: formattedPosts,
-    });
+    };
+
+    // Add reblog breakdown for blog category
+    if (params.category === 'blog') {
+      response.authored_count = authoredCount;
+      response.reblog_count = reblogCount;
+    }
+
+    return successJson(response);
   } catch (error) {
     return errorResponse(handleError(error, 'get_posts_by_user'));
   }
+}
+
+/**
+ * Get human-readable label for category
+ */
+function getCategoryLabel(category: string): string {
+  const labels: Record<string, string> = {
+    posts: 'authored posts',
+    blog: 'blog posts',
+    feed: 'feed posts',
+    comments: 'comments',
+    replies: 'replies',
+  };
+  return labels[category] || category;
 }

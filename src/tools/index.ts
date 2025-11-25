@@ -89,7 +89,7 @@ export function registerTools(server: McpServer): void {
   // === Content Tools ===
   server.tool(
     'get_posts',
-    'Get posts: by tag (trending/hot/etc), by user (blog/feed), or single post. Actions: by_tag, by_user, single',
+    'Get posts: by tag (trending/hot/etc), by user (posts/blog/feed/comments/replies), or single post. Actions: by_tag, by_user, single',
     schemas.getPostsSchema,
     adaptHandler(contentTools.getPosts)
   );

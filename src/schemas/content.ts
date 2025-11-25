@@ -29,7 +29,7 @@ export const getPostsSchema = z.object({
   // For by_tag
   tag: z.string().optional().describe('Tag to filter posts (for by_tag)'),
   category: z.union([tagQueryCategories, userQueryCategories]).optional().describe(
-    'Sort/filter: For by_tag: trending/hot/created/etc. For by_user: blog (their posts), feed (posts they follow), comments (comments they made)'
+    'Sort/filter: For by_tag: trending/hot/created/etc. For by_user: posts (authored only), blog (includes reblogs), feed (from followed), comments, replies'
   ),
   // For by_user
   username: z.string().optional().describe('Username to get posts/comments for (for by_user)'),
@@ -90,7 +90,7 @@ export const getPostsByTagSchema = z.object({
 // Schema for get_posts_by_user tool
 export const getPostsByUserSchema = z.object({
   category: userQueryCategories.describe(
-    'Type of content: blog (posts by user), feed (posts from users they follow), comments (comments made by user)'
+    'Type of content: posts (authored only), blog (includes reblogs), feed (from followed), comments, replies'
   ),
   username: z.string().describe('Hive username to fetch posts/comments for'),
   limit: z
