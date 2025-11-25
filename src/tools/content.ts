@@ -5,7 +5,7 @@
  * Purpose: Read-only content retrieval from the Hive blockchain.
  * Key elements: getPosts (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api, utils/date
- * Last update: Added reblog support with bridge.get_account_posts API
+ * Last update: Added community, excerpt, and PeakD links to post responses
  */
 
 import { type Response } from '../utils/response.js';
@@ -93,16 +93,17 @@ interface RawPost {
 
 /**
  * Get a specific post by author and permlink
+ * Uses bridge.get_post for richer data including community info
  */
 export async function getPostContent(
   params: { author: string; permlink: string }
 ): Promise<Response> {
   try {
-    // Use direct API call for content
-    const content = await callCondenserApi<RawPost>(
-      'get_content',
-      [params.author, params.permlink]
-    );
+    // Use bridge API for richer post data
+    const content = await callBridgeApi<BridgePost>('get_post', {
+      author: params.author,
+      permlink: params.permlink,
+    });
     
     if (!content || !content.author) {
       return errorResponse(`Error: Post not found: ${params.author}/${params.permlink}`);
@@ -124,10 +125,12 @@ export async function getPostContent(
       author: content.author,
       body: content.body,
       created: formatDate(content.created),
-      last_update: formatDate(content.last_update),
-      category: content.category,
+      last_update: formatDate(content.updated),
+      community: content.community_title || null,
+      excerpt: getPostExcerpt(content),
+      reputation: content.author_reputation,
       tags,
-      url: `https://hive.blog/@${params.author}/${params.permlink}`,
+      url: `https://peakd.com/@${params.author}/${params.permlink}`,
     });
   } catch (error) {
     return errorResponse(handleError(error, 'get_post_content'));
@@ -137,6 +140,7 @@ export async function getPostContent(
 /**
  * Get posts by tag
  * Retrieves Hive posts filtered by a specific tag and sorted by a category
+ * Uses bridge.get_ranked_posts API for richer data including community and excerpts
  */
 export async function getPostsByTag(
   params: { 
@@ -146,37 +150,41 @@ export async function getPostsByTag(
   }
 ): Promise<Response> {
   try {
-    // Map category to the appropriate condenser API method
-    const methodMap: Record<string, string> = {
-      trending: 'get_discussions_by_trending',
-      hot: 'get_discussions_by_hot',
-      created: 'get_discussions_by_created',
-      active: 'get_discussions_by_active',
-      promoted: 'get_discussions_by_promoted',
-      votes: 'get_discussions_by_votes',
-      children: 'get_discussions_by_children',
-      cashout: 'get_discussions_by_cashout',
-      comments: 'get_discussions_by_comments',
-    };
-    
-    const method = methodMap[params.category] || 'get_discussions_by_trending';
-    
-    const posts = await callCondenserApi<RawPost[]>(method, [{
+    // Use bridge.get_ranked_posts which provides community data and better metadata
+    const posts = await callBridgeApi<BridgePost[]>('get_ranked_posts', {
+      sort: params.category,  // trending, hot, created, etc.
       tag: params.tag,
       limit: params.limit,
-    }]);
+    });
 
-    const formattedPosts: FormattedPost[] = posts.map((post) => ({
+    if (!posts || !Array.isArray(posts)) {
+      return successJson({
+        tag: params.tag,
+        category: params.category,
+        count: 0,
+        items: [],
+      });
+    }
+
+    const formattedPosts = posts.map((post) => ({
       title: post.title,
       author: post.author,
       permlink: post.permlink,
       created: formatDate(post.created),
-      votes: post.net_votes,
-      payout: post.pending_payout_value,
-      url: `https://hive.blog/@${post.author}/${post.permlink}`,
+      votes: post.stats?.total_votes || 0,
+      payout: post.payout || post.pending_payout_value || '0',
+      reputation: post.author_reputation,
+      community: post.community_title || null,
+      excerpt: getPostExcerpt(post),
+      url: `https://peakd.com/@${post.author}/${post.permlink}`,
     }));
 
-    return successJson(formattedPosts);
+    return successJson({
+      tag: params.tag,
+      category: params.category,
+      count: formattedPosts.length,
+      items: formattedPosts,
+    });
   } catch (error) {
     return errorResponse(handleError(error, 'get_posts_by_tag'));
   }
@@ -191,7 +199,10 @@ interface BridgePost {
   updated: string;
   body?: string;
   category: string;
+  community?: string;
+  community_title?: string;
   author_reputation: number;
+  json_metadata?: string;
   stats?: {
     total_votes: number;
     gray: boolean;
@@ -200,6 +211,60 @@ interface BridgePost {
   payout?: number;
   pending_payout_value?: string;
   reblogged_by?: string[];  // Array of accounts that reblogged (when in blog view)
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Create a clean text excerpt from post body
+ * Strips markdown formatting and returns first N characters
+ */
+function createExcerpt(body: string | undefined, maxLength: number = 150): string {
+  if (!body) return '';
+  
+  // Strip markdown images, links, and formatting
+  const clean = body
+    .replace(/!\[.*?\]\(.*?\)/g, '')           // Remove images ![alt](url)
+    .replace(/\[([^\]]+)\]\(.*?\)/g, '$1')     // Keep link text [text](url) -> text
+    .replace(/#{1,6}\s*/g, '')                  // Remove heading markers
+    .replace(/[*_~`]+/g, '')                    // Remove emphasis markers
+    .replace(/<[^>]+>/g, '')                    // Remove HTML tags
+    .replace(/\n+/g, ' ')                       // Normalize newlines to spaces
+    .replace(/\s+/g, ' ')                       // Normalize multiple spaces
+    .trim();
+  
+  if (clean.length <= maxLength) return clean;
+  
+  // Cut at word boundary
+  const truncated = clean.substring(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  if (lastSpace > maxLength * 0.7) {
+    return truncated.substring(0, lastSpace).trim() + '...';
+  }
+  return truncated.trim() + '...';
+}
+
+/**
+ * Extract description from json_metadata or create excerpt from body
+ */
+function getPostExcerpt(post: BridgePost): string {
+  // Try to get description from metadata first
+  if (post.json_metadata) {
+    try {
+      const meta = JSON.parse(post.json_metadata);
+      if (meta.description && typeof meta.description === 'string') {
+        return meta.description;
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }
+  
+  // Fallback to body excerpt
+  return createExcerpt(post.body, 150);
 }
 
 /**
@@ -239,7 +304,7 @@ export async function getPostsByUser(
       });
     }
 
-    // Format posts with reblog metadata
+    // Format posts with reblog metadata, community, and excerpt
     const formattedPosts = posts.map((post) => {
       // Determine if this is a reblog (author differs from queried user in blog view)
       const isReblog = params.category === 'blog' && post.author !== params.username;
@@ -252,6 +317,8 @@ export async function getPostsByUser(
         votes: post.stats?.total_votes || 0,
         payout: post.payout || post.pending_payout_value || '0',
         reputation: post.author_reputation,
+        community: post.community_title || null,
+        excerpt: getPostExcerpt(post),
         is_reblog: isReblog,
         reblogged_by: isReblog ? params.username : null,
         url: `https://peakd.com/@${post.author}/${post.permlink}`,
