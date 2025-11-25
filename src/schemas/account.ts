@@ -5,7 +5,7 @@
  * Purpose: Input validation for account queries and history.
  * Key elements: accountInfoSchema (consolidated)
  * Dependencies: zod, common.js
- * Last update: Tool consolidation - grouped related account operations
+ * Last update: Added get_profile action for human-readable profile with reputation
  */
 
 import { z } from 'zod';
@@ -17,11 +17,11 @@ import { operationFilterSchema } from './common.js';
 
 /**
  * Consolidated schema for account information queries
- * Combines: get_account_info, get_account_history, get_vesting_delegations, get_account_notifications
+ * Combines: get_account_info, get_account_profile, get_account_history, get_vesting_delegations, get_account_notifications
  */
 export const accountInfoSchema = z.object({
-  action: z.enum(['get_info', 'get_history', 'get_delegations', 'get_notifications']).describe(
-    'Action: get_info, get_history, get_delegations, or get_notifications'
+  action: z.enum(['get_info', 'get_profile', 'get_history', 'get_delegations', 'get_notifications']).describe(
+    'Action: get_info, get_profile, get_history, get_delegations, or get_notifications'
   ),
   username: z.string().optional().describe('Hive username/account to query'),
   // For get_history

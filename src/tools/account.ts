@@ -1,18 +1,18 @@
 /**
  * Account-related Tools Implementation
  * 
- * Summary: Provides tools for fetching Hive account information, history, and delegations.
+ * Summary: Provides tools for fetching Hive account information, history, profile, and delegations.
  * Purpose: Read-only account data retrieval from the Hive blockchain.
- * Key elements: accountInfo (consolidated dispatcher)
+ * Key elements: accountInfo (consolidated dispatcher), getAccountProfile (social profile with reputation)
  * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, utils/date, content-advanced.js
- * Last update: Added date formatting for improved readability
+ * Last update: Added get_profile action for human-readable profile with reputation
  */
 
 import { getChain } from '../config/client.js';
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
-import { callCondenserApi } from '../utils/api.js';
+import { callCondenserApi, callBridgeApi } from '../utils/api.js';
 import { formatDate } from '../utils/date.js';
 import { getAccountNotifications } from './content-advanced.js';
 
@@ -22,11 +22,11 @@ import { getAccountNotifications } from './content-advanced.js';
 
 /**
  * Consolidated dispatcher for account info queries
- * Handles: get_info, get_history, get_delegations, get_notifications
+ * Handles: get_info, get_profile, get_history, get_delegations, get_notifications
  */
 export async function accountInfo(
   params: {
-    action: 'get_info' | 'get_history' | 'get_delegations' | 'get_notifications';
+    action: 'get_info' | 'get_profile' | 'get_history' | 'get_delegations' | 'get_notifications';
     username?: string;
     limit?: number;
     operation_filter?: string[];
@@ -41,6 +41,8 @@ export async function accountInfo(
   switch (params.action) {
     case 'get_info':
       return getAccountInfo({ username: params.username });
+    case 'get_profile':
+      return getAccountProfile({ username: params.username });
     case 'get_history':
       return getAccountHistory({
         username: params.username,
@@ -91,6 +93,77 @@ export async function getAccountInfo(
     return successJson(accountData);
   } catch (error) {
     return errorResponse(handleError(error, 'get_account_info'));
+  }
+}
+
+// Interface for bridge.get_profile response
+interface BridgeProfile {
+  name: string;
+  created: string;
+  active: string;
+  post_count: number;
+  reputation: number;
+  blacklists: string[];
+  stats: {
+    followers: number;
+    following: number;
+    rank: number;
+  };
+  metadata: {
+    profile?: {
+      name?: string;
+      about?: string;
+      location?: string;
+      website?: string;
+      profile_image?: string;
+      cover_image?: string;
+    };
+  };
+}
+
+/**
+ * Get account profile
+ * Fetches user-friendly profile information including reputation, social stats, and bio
+ * Uses bridge.get_profile which returns human-readable reputation scores
+ */
+export async function getAccountProfile(
+  params: { username: string }
+): Promise<Response> {
+  try {
+    const profile = await callBridgeApi<BridgeProfile>('get_profile', {
+      account: params.username,
+    });
+
+    if (!profile || !profile.name) {
+      return errorResponse(`Error: Account ${params.username} not found`);
+    }
+
+    // Extract profile metadata (may be nested or empty)
+    const profileMeta = profile.metadata?.profile || {};
+
+    return successJson({
+      username: profile.name,
+      reputation: profile.reputation,
+      post_count: profile.post_count,
+      profile: {
+        name: profileMeta.name || null,
+        about: profileMeta.about || null,
+        location: profileMeta.location || null,
+        website: profileMeta.website || null,
+        profile_image: profileMeta.profile_image || null,
+        cover_image: profileMeta.cover_image || null,
+      },
+      stats: {
+        followers: profile.stats?.followers || 0,
+        following: profile.stats?.following || 0,
+        rank: profile.stats?.rank || 0,
+      },
+      created: formatDate(profile.created),
+      last_active: formatDate(profile.active),
+      blacklists: profile.blacklists || [],
+    });
+  } catch (error) {
+    return errorResponse(handleError(error, 'get_account_profile'));
   }
 }
 

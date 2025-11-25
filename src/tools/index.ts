@@ -111,7 +111,7 @@ export function registerTools(server: McpServer): void {
   // === Account Tools ===
   server.tool(
     'account_info',
-    'Get account information: profile, history, delegations, or notifications. Actions: get_info, get_history, get_delegations, get_notifications',
+    'Get account information: profile, history, delegations, or notifications. Actions: get_info, get_profile, get_history, get_delegations, get_notifications',
     schemas.accountInfoSchema,
     adaptHandler(accountTools.accountInfo)
   );
