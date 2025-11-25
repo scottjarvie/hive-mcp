@@ -4,8 +4,8 @@
  * Summary: Provides tools for fetching Hive account information, history, profile, and delegations.
  * Purpose: Read-only account data retrieval from the Hive blockchain.
  * Key elements: accountInfo (consolidated dispatcher), getAccountProfile (social profile with reputation)
- * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, utils/date, content-advanced.js
- * Last update: Added get_profile action for human-readable profile with reputation
+ * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, utils/date, utils/vests, content-advanced.js
+ * Last update: Added automatic VESTS to HP conversion in responses
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,7 @@ import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi, callBridgeApi } from '../utils/api.js';
 import { formatDate } from '../utils/date.js';
+import { vestsToHP, getVestsConversionRate } from '../utils/vests.js';
 import { getAccountNotifications } from './content-advanced.js';
 
 // =============================================================================
@@ -70,9 +71,46 @@ export async function accountInfo(
 // INDIVIDUAL TOOL IMPLEMENTATIONS
 // =============================================================================
 
+// Interface for account data with VESTS fields
+interface AccountData {
+  name: string;
+  balance: { amount: string; nai: string; precision: number };
+  hbd_balance: { amount: string; nai: string; precision: number };
+  savings_balance: { amount: string; nai: string; precision: number };
+  savings_hbd_balance: { amount: string; nai: string; precision: number };
+  vesting_shares: { amount: string; nai: string; precision: number };
+  delegated_vesting_shares: { amount: string; nai: string; precision: number };
+  received_vesting_shares: { amount: string; nai: string; precision: number };
+  reward_hive_balance: { amount: string; nai: string; precision: number };
+  reward_hbd_balance: { amount: string; nai: string; precision: number };
+  reward_vesting_balance: { amount: string; nai: string; precision: number };
+  reward_vesting_hive: { amount: string; nai: string; precision: number };
+  post_count: number;
+  created: string;
+  last_post: string;
+  last_vote_time: string;
+  witnesses_voted_for: number;
+  posting_rewards: number;
+  curation_rewards: number;
+  [key: string]: unknown;
+}
+
+/**
+ * Parse a WAX asset object to a readable string
+ */
+function parseWaxAsset(asset: { amount: string; nai: string; precision: number }): string {
+  const amount = parseInt(asset.amount) / Math.pow(10, asset.precision);
+  let symbol = 'UNKNOWN';
+  if (asset.nai === '@@000000021') symbol = 'HIVE';
+  else if (asset.nai === '@@000000013') symbol = 'HBD';
+  else if (asset.nai === '@@000000037') symbol = 'VESTS';
+  return `${amount.toFixed(asset.precision)} ${symbol}`;
+}
+
 /**
  * Get account information
  * Fetches detailed information about a Hive blockchain account
+ * Automatically converts VESTS to HP for human-readable values
  */
 export async function getAccountInfo(
   params: { username: string }
@@ -89,8 +127,71 @@ export async function getAccountInfo(
       return errorResponse(`Error: Account ${params.username} not found`);
     }
     
-    const accountData = result.accounts[0];
-    return successJson(accountData);
+    const account = result.accounts[0] as unknown as AccountData;
+    
+    // Get conversion rate once to use for all VESTS conversions
+    const conversionRate = await getVestsConversionRate();
+    
+    // Parse VESTS amounts
+    const vestingShares = parseInt(account.vesting_shares.amount) / Math.pow(10, account.vesting_shares.precision);
+    const delegatedVests = parseInt(account.delegated_vesting_shares.amount) / Math.pow(10, account.delegated_vesting_shares.precision);
+    const receivedVests = parseInt(account.received_vesting_shares.amount) / Math.pow(10, account.received_vesting_shares.precision);
+    const rewardVests = parseInt(account.reward_vesting_balance.amount) / Math.pow(10, account.reward_vesting_balance.precision);
+    
+    // Calculate effective vesting (own + received - delegated)
+    const effectiveVests = vestingShares + receivedVests - delegatedVests;
+    
+    // Convert all VESTS to HP
+    const ownHP = await vestsToHP(vestingShares, conversionRate);
+    const delegatedHP = await vestsToHP(delegatedVests, conversionRate);
+    const receivedHP = await vestsToHP(receivedVests, conversionRate);
+    const effectiveHP = await vestsToHP(effectiveVests, conversionRate);
+    const rewardHP = await vestsToHP(rewardVests, conversionRate);
+    
+    // Build formatted response with HP values
+    return successJson({
+      account: account.name,
+      
+      // Balances (liquid)
+      balance: parseWaxAsset(account.balance),
+      hbd_balance: parseWaxAsset(account.hbd_balance),
+      savings_balance: parseWaxAsset(account.savings_balance),
+      savings_hbd_balance: parseWaxAsset(account.savings_hbd_balance),
+      
+      // Hive Power (with HP conversions)
+      hive_power: {
+        own: `${ownHP.toFixed(3)} HP`,
+        own_vests: `${vestingShares.toFixed(6)} VESTS`,
+        delegated_out: `${delegatedHP.toFixed(3)} HP`,
+        delegated_out_vests: `${delegatedVests.toFixed(6)} VESTS`,
+        received: `${receivedHP.toFixed(3)} HP`,
+        received_vests: `${receivedVests.toFixed(6)} VESTS`,
+        effective: `${effectiveHP.toFixed(3)} HP`,
+        effective_vests: `${effectiveVests.toFixed(6)} VESTS`,
+      },
+      
+      // Pending rewards
+      pending_rewards: {
+        hive: parseWaxAsset(account.reward_hive_balance),
+        hbd: parseWaxAsset(account.reward_hbd_balance),
+        hp: `${rewardHP.toFixed(3)} HP`,
+        vests: `${rewardVests.toFixed(6)} VESTS`,
+      },
+      
+      // Stats
+      post_count: account.post_count,
+      witnesses_voted_for: account.witnesses_voted_for,
+      curation_rewards_vests: account.curation_rewards,
+      posting_rewards_vests: account.posting_rewards,
+      
+      // Timestamps
+      created: formatDate(account.created),
+      last_post: formatDate(account.last_post),
+      last_vote_time: formatDate(account.last_vote_time),
+      
+      // Include raw data for advanced users
+      raw: account,
+    });
   } catch (error) {
     return errorResponse(handleError(error, 'get_account_info'));
   }
@@ -232,6 +333,7 @@ export async function getAccountHistory(
 /**
  * Get vesting delegations
  * Retrieves a list of vesting delegations made by a specific Hive account
+ * Includes HP equivalents for each delegation
  */
 export async function getVestingDelegations(
   params: { 
@@ -256,20 +358,38 @@ export async function getVestingDelegations(
       return successJson({
         account: params.username,
         delegations_count: 0,
+        total_delegated_hp: '0.000 HP',
         delegations: []
       });
     }
     
-    const formattedDelegations = result.map(delegation => ({
-      delegator: delegation.delegator,
-      delegatee: delegation.delegatee,
-      vesting_shares: delegation.vesting_shares,
-      min_delegation_time: formatDate(delegation.min_delegation_time),
-    }));
+    // Get conversion rate once for all delegations
+    const conversionRate = await getVestsConversionRate();
+    
+    // Format delegations with HP equivalents
+    const formattedDelegations = await Promise.all(
+      result.map(async (delegation) => {
+        const hp = await vestsToHP(delegation.vesting_shares, conversionRate);
+        return {
+          delegator: delegation.delegator,
+          delegatee: delegation.delegatee,
+          hp: `${hp.toFixed(3)} HP`,
+          vesting_shares: delegation.vesting_shares,
+          min_delegation_time: formatDate(delegation.min_delegation_time),
+        };
+      })
+    );
+    
+    // Calculate total delegated HP
+    let totalHP = 0;
+    for (const del of formattedDelegations) {
+      totalHP += parseFloat(del.hp);
+    }
     
     return successJson({
       account: params.username,
       delegations_count: formattedDelegations.length,
+      total_delegated_hp: `${totalHP.toFixed(3)} HP`,
       delegations: formattedDelegations
     });
   } catch (error) {
