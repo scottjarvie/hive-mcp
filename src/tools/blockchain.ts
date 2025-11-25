@@ -4,8 +4,8 @@
  * Summary: Provides tools for fetching Hive blockchain properties and statistics.
  * Purpose: Read-only blockchain data retrieval.
  * Key elements: getChainProperties
- * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api
- * Last update: Migration from dhive to WAX library
+ * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, utils/date
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -13,6 +13,7 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 
 /**
  * Get blockchain properties and statistics
@@ -52,7 +53,7 @@ export async function getChainProperties(
         base: currentFeed.base,
         quote: currentFeed.quote,
       } : null,
-      timestamp: new Date().toISOString(),
+      timestamp: formatDate(new Date().toISOString()),
     };
     
     return successJson(response);

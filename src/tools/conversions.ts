@@ -4,8 +4,8 @@
  * Summary: Provides tools for HBD/HIVE conversion operations.
  * Purpose: Convert between HBD and HIVE using WAX transaction builder.
  * Key elements: conversions (consolidated dispatcher)
- * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api, utils/date
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,7 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callDatabaseApi, generateRequestId } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 
 // =============================================================================
 // CONSOLIDATED DISPATCHER
@@ -200,7 +201,7 @@ export async function getConversionRequests(
       request_id: c.requestid,
       owner: c.owner,
       amount: c.amount,
-      conversion_date: c.conversion_date,
+      conversion_date: formatDate(c.conversion_date),
       type: 'hbd_conversion',
     }));
 
@@ -209,7 +210,7 @@ export async function getConversionRequests(
       owner: c.owner,
       collateral_amount: c.collateral_amount,
       converted_amount: c.converted_amount,
-      conversion_date: c.conversion_date,
+      conversion_date: formatDate(c.conversion_date),
       type: 'collateralized_conversion',
     }));
 

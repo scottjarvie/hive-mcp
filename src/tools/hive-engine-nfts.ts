@@ -4,8 +4,8 @@
  * Summary: Tools for Hive Engine NFT operations.
  * Purpose: Query NFT collections, transfer, buy/sell NFTs.
  * Key elements: heNfts (consolidated dispatcher)
- * Dependencies: hive-engine-api, config, WAX client
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: hive-engine-api, config, WAX client, utils/date
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -13,6 +13,7 @@ import config from '../config/index.js';
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
+import { formatTimestamp } from '../utils/date.js';
 import {
   getNFTInstances,
   getNFTDefinition,
@@ -242,7 +243,7 @@ export async function getHENFTSellOrders(
         price: o.price,
         priceSymbol: o.priceSymbol,
         fee: o.fee,
-        timestamp: o.timestamp,
+        timestamp: formatTimestamp(o.timestamp),
         grouping: o.grouping,
       })),
     });

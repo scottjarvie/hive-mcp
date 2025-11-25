@@ -4,8 +4,8 @@
  * Summary: Provides tools for claiming rewards and querying reward info.
  * Purpose: Claim pending author/curation rewards and get reward pool data.
  * Key elements: rewards (consolidated dispatcher)
- * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api, utils/date
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -14,6 +14,7 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi, callDatabaseApi, vestsToHp, getGlobalProperties } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 
 // =============================================================================
 // CONSOLIDATED DISPATCHER
@@ -157,7 +158,7 @@ export async function getRewardFund(
       fund_name: result.name,
       reward_balance: result.reward_balance,
       recent_claims: result.recent_claims,
-      last_update: result.last_update,
+      last_update: formatDate(result.last_update),
       content_constant: result.content_constant,
       percent_curation_rewards: result.percent_curation_rewards,
       percent_content_rewards: result.percent_content_rewards,

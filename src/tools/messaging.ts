@@ -4,8 +4,8 @@
  * Summary: Provides tools for encrypted messaging on the Hive blockchain.
  * Purpose: Encrypt/decrypt messages and send encrypted memos via transfers.
  * Key elements: messaging (consolidated dispatcher)
- * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api, utils/date
+ * Last update: Added date formatting for improved readability
  * 
  * Note: WAX encryption requires BeeKeeper for key management. This implementation
  * provides basic functionality with some limitations on client-side encryption.
@@ -17,6 +17,7 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 import logger from '../utils/logger.js';
 
 // =============================================================================
@@ -310,7 +311,7 @@ export async function getEncryptedMessages(
         return {
           index,
           transaction_id: trx_id,
-          timestamp,
+          timestamp: formatDate(timestamp),
           direction,
           counterparty: otherParty,
           amount: opData.amount,

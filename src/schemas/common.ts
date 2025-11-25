@@ -113,4 +113,5 @@ export const tagQueryCategories = z.enum([
 ]);
 
 // Export valid user-based query categories
-export const userQueryCategories = z.enum(['blog', 'feed']);
+// blog = posts authored by user, feed = posts from users they follow, comments = comments made by user
+export const userQueryCategories = z.enum(['blog', 'feed', 'comments']);

@@ -4,8 +4,8 @@
  * Summary: Tools for Hive Engine market/trading operations.
  * Purpose: Query orderbook, place/cancel orders, view trade history.
  * Key elements: heMarket (consolidated dispatcher)
- * Dependencies: hive-engine-api, config, WAX client
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: hive-engine-api, config, WAX client, utils/date
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -13,6 +13,7 @@ import config from '../config/index.js';
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
+import { formatTimestamp } from '../utils/date.js';
 import {
   getMarketBuyBook,
   getMarketSellBook,
@@ -162,8 +163,7 @@ export async function getHEMarketHistory(
         quantity: t.quantity,
         price: t.price,
         volume: t.volume,
-        timestamp: t.timestamp,
-        date: new Date(t.timestamp * 1000).toISOString(),
+        timestamp: formatTimestamp(t.timestamp),
       })),
     });
   } catch (error) {
@@ -220,14 +220,14 @@ export async function getHEOpenOrders(
         quantity: o.quantity,
         price: o.price,
         total_locked: o.tokensLocked,
-        timestamp: o.timestamp,
+        timestamp: formatTimestamp(o.timestamp),
       })),
       sell_orders: sellOrders.map(o => ({
         id: o._id,
         symbol: o.symbol,
         quantity: o.quantity,
         price: o.price,
-        timestamp: o.timestamp,
+        timestamp: formatTimestamp(o.timestamp),
       })),
     });
   } catch (error) {

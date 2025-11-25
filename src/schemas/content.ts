@@ -5,7 +5,7 @@
  * Purpose: Input validation for posts, comments, and content management.
  * Key elements: getPostsSchema, contentManageSchema (consolidated)
  * Dependencies: zod, common.js
- * Last update: Tool consolidation - grouped related content operations
+ * Last update: Added comments category support and improved descriptions
  */
 
 import { z } from 'zod';
@@ -21,7 +21,7 @@ import { tagsSchema, tagQueryCategories, userQueryCategories, beneficiariesSchem
  */
 export const getPostsSchema = z.object({
   action: z.enum(['by_tag', 'by_user', 'single']).describe(
-    'Action: by_tag (trending/hot/etc by tag), by_user (user blog/feed), or single (specific post)'
+    'Action: by_tag (posts by tag/category), by_user (user posts/feed/comments), or single (one specific post)'
   ),
   // For single post
   author: z.string().optional().describe('Author of the post (for single)'),
@@ -29,12 +29,12 @@ export const getPostsSchema = z.object({
   // For by_tag
   tag: z.string().optional().describe('Tag to filter posts (for by_tag)'),
   category: z.union([tagQueryCategories, userQueryCategories]).optional().describe(
-    'Sort category: trending/hot/created/etc (for by_tag) or blog/feed (for by_user)'
+    'Sort/filter: For by_tag: trending/hot/created/etc. For by_user: blog (their posts), feed (posts they follow), comments (comments they made)'
   ),
   // For by_user
-  username: z.string().optional().describe('Username to get posts for (for by_user)'),
+  username: z.string().optional().describe('Username to get posts/comments for (for by_user)'),
   // Common
-  limit: z.number().min(1).max(20).optional().default(10).describe('Number of posts to return (1-20)'),
+  limit: z.number().min(1).max(20).optional().default(10).describe('Number of items to return (1-20)'),
 });
 
 /**
@@ -90,15 +90,15 @@ export const getPostsByTagSchema = z.object({
 // Schema for get_posts_by_user tool
 export const getPostsByUserSchema = z.object({
   category: userQueryCategories.describe(
-    'Type of user posts to fetch (blog = posts by user, feed = posts from users they follow)'
+    'Type of content: blog (posts by user), feed (posts from users they follow), comments (comments made by user)'
   ),
-  username: z.string().describe('Hive username to fetch posts for'),
+  username: z.string().describe('Hive username to fetch posts/comments for'),
   limit: z
     .number()
     .min(1)
     .max(20)
     .default(10)
-    .describe('Number of posts to return (1-20)'),
+    .describe('Number of items to return (1-20)'),
 });
 
 // Schema for create_post tool

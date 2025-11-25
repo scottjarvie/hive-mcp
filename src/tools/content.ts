@@ -4,14 +4,15 @@
  * Summary: Provides tools for fetching Hive posts and content.
  * Purpose: Read-only content retrieval from the Hive blockchain.
  * Key elements: getPosts (consolidated dispatcher)
- * Dependencies: utils/response, utils/error, utils/api
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: utils/response, utils/error, utils/api, utils/date
+ * Last update: Added date formatting and comments category support
  */
 
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 
 // =============================================================================
 // CONSOLIDATED DISPATCHER
@@ -122,8 +123,8 @@ export async function getPostContent(
       title: content.title,
       author: content.author,
       body: content.body,
-      created: content.created,
-      last_update: content.last_update,
+      created: formatDate(content.created),
+      last_update: formatDate(content.last_update),
       category: content.category,
       tags,
       url: `https://hive.blog/@${params.author}/${params.permlink}`,
@@ -169,7 +170,7 @@ export async function getPostsByTag(
       title: post.title,
       author: post.author,
       permlink: post.permlink,
-      created: post.created,
+      created: formatDate(post.created),
       votes: post.net_votes,
       payout: post.pending_payout_value,
       url: `https://hive.blog/@${post.author}/${post.permlink}`,
@@ -183,7 +184,8 @@ export async function getPostsByTag(
 
 /**
  * Get posts by user
- * Retrieves posts authored by or in the feed of a specific Hive user
+ * Retrieves posts authored by, in the feed of, or comments made by a specific Hive user
+ * Categories: blog (their posts), feed (posts they follow), comments (comments they made)
  */
 export async function getPostsByUser(
   params: { 
@@ -193,30 +195,55 @@ export async function getPostsByUser(
   }
 ): Promise<Response> {
   try {
-    // For blog and feed queries, the username is provided as the tag parameter
+    // Map categories to API methods
     const methodMap: Record<string, string> = {
       blog: 'get_discussions_by_blog',
       feed: 'get_discussions_by_feed',
+      comments: 'get_discussions_by_comments',
     };
     
     const method = methodMap[params.category] || 'get_discussions_by_blog';
     
-    const posts = await callCondenserApi<RawPost[]>(method, [{
-      tag: params.username,
-      limit: params.limit,
-    }]);
+    // Comments API uses start_author parameter, others use tag
+    let apiParams: Record<string, unknown>;
+    if (params.category === 'comments') {
+      apiParams = {
+        start_author: params.username,
+        limit: params.limit,
+      };
+    } else {
+      apiParams = {
+        tag: params.username,
+        limit: params.limit,
+      };
+    }
+    
+    const posts = await callCondenserApi<RawPost[]>(method, [apiParams]);
 
     const formattedPosts: FormattedPost[] = posts.map((post) => ({
-      title: post.title,
+      title: post.title || '(comment)',  // Comments often have empty titles
       author: post.author,
       permlink: post.permlink,
-      created: post.created,
+      created: formatDate(post.created),
       votes: post.net_votes,
       payout: post.pending_payout_value,
       url: `https://hive.blog/@${post.author}/${post.permlink}`,
     }));
 
-    return successJson(formattedPosts);
+    // Add context about what was fetched
+    const resultLabel = params.category === 'comments' 
+      ? 'comments' 
+      : params.category === 'feed' 
+        ? 'feed posts' 
+        : 'posts';
+
+    return successJson({
+      username: params.username,
+      category: params.category,
+      result_type: resultLabel,
+      count: formattedPosts.length,
+      items: formattedPosts,
+    });
   } catch (error) {
     return errorResponse(handleError(error, 'get_posts_by_user'));
   }

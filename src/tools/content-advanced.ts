@@ -4,14 +4,15 @@
  * Summary: Provides advanced content tools for replies, votes, notifications, discussions.
  * Purpose: Read-only advanced content retrieval from the Hive blockchain.
  * Key elements: contentEngagement (consolidated dispatcher)
- * Dependencies: utils/response, utils/error, utils/api, transaction.js, social.js
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: utils/response, utils/error, utils/api, utils/date, transaction.js, social.js
+ * Last update: Added date formatting for improved readability
  */
 
 import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi, callBridgeApi } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 import { voteOnPost } from './transaction.js';
 import { reblogPost } from './social.js';
 
@@ -148,8 +149,8 @@ export async function getContentReplies(
       parent_author: reply.parent_author,
       parent_permlink: reply.parent_permlink,
       body: reply.body,
-      created: reply.created,
-      last_update: reply.last_update,
+      created: formatDate(reply.created),
+      last_update: formatDate(reply.last_update),
       depth: reply.depth,
       children: reply.children,
       votes: reply.net_votes,
@@ -183,7 +184,7 @@ export async function getActiveVotes(
       voter: vote.voter,
       weight: vote.weight,
       percent: vote.percent,
-      time: vote.time,
+      time: formatDate(vote.time),
       rshares: String(vote.rshares),
     }));
 
@@ -254,7 +255,7 @@ export async function getAccountNotifications(
     const formattedNotifications = notifications.map((notif) => ({
       id: notif.id,
       type: notif.type,
-      date: notif.date,
+      date: formatDate(notif.date),
       message: notif.msg,
       url: notif.url ? `https://hive.blog${notif.url}` : null,
       score: notif.score,
@@ -324,7 +325,7 @@ export async function getDiscussion(
       parent_permlink: entry.parent_permlink,
       title: entry.title,
       body: entry.body,
-      created: entry.created,
+      created: formatDate(entry.created),
       depth: entry.depth,
       children: entry.children,
       votes: entry.net_votes,

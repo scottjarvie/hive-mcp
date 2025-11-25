@@ -4,8 +4,8 @@
  * Summary: Provides tools for fetching Hive account information, history, and delegations.
  * Purpose: Read-only account data retrieval from the Hive blockchain.
  * Key elements: accountInfo (consolidated dispatcher)
- * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, content-advanced.js
- * Last update: Tool consolidation - added dispatcher function
+ * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api, utils/date, content-advanced.js
+ * Last update: Added date formatting for improved readability
  */
 
 import { getChain } from '../config/client.js';
@@ -13,6 +13,7 @@ import { type Response } from '../utils/response.js';
 import { handleError } from '../utils/error.js';
 import { successJson, errorResponse } from '../utils/response.js';
 import { callCondenserApi } from '../utils/api.js';
+import { formatDate } from '../utils/date.js';
 import { getAccountNotifications } from './content-advanced.js';
 
 // =============================================================================
@@ -138,7 +139,7 @@ export async function getAccountHistory(
         return {
           index,
           type: opType,
-          timestamp,
+          timestamp: formatDate(timestamp),
           transaction_id: trx_id,
           details: opData,
         };
@@ -190,7 +191,7 @@ export async function getVestingDelegations(
       delegator: delegation.delegator,
       delegatee: delegation.delegatee,
       vesting_shares: delegation.vesting_shares,
-      min_delegation_time: delegation.min_delegation_time,
+      min_delegation_time: formatDate(delegation.min_delegation_time),
     }));
     
     return successJson({
