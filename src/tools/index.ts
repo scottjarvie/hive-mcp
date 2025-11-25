@@ -5,7 +5,7 @@
  * Purpose: Central registration point for Hive blockchain tools.
  * Key elements: registerTools, registerPrompts
  * Dependencies: @modelcontextprotocol/sdk, schemas, tool modules
- * Last update: Migration to ESM with WAX library
+ * Last update: Phase 3 - Added advanced content and RC tools
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -19,6 +19,8 @@ import * as blockchainTools from './blockchain.js';
 import * as messagingTools from './messaging.js';
 import * as socialTools from './social.js';
 import * as communityTools from './community.js';
+import * as contentAdvancedTools from './content-advanced.js';
+import * as resourceCreditsTools from './resource-credits.js';
 import { adaptHandler } from '../utils/response.js';
 import * as promptsTools from './prompts.js';
 
@@ -259,5 +261,71 @@ export function registerTools(server: McpServer): void {
     'Unsubscribe from (leave) a Hive community',
     schemas.unsubscribeCommunitySchema,
     adaptHandler(communityTools.unsubscribeCommunity)
+  );
+
+  // Advanced content tools
+  server.tool(
+    'get_content_replies',
+    'Get all replies/comments on a specific Hive post',
+    schemas.getContentRepliesSchema,
+    adaptHandler(contentAdvancedTools.getContentReplies)
+  );
+
+  server.tool(
+    'get_active_votes',
+    'Get all votes on a specific Hive post with voter details',
+    schemas.getActiveVotesSchema,
+    adaptHandler(contentAdvancedTools.getActiveVotes)
+  );
+
+  server.tool(
+    'get_reblogged_by',
+    'Get list of accounts that reblogged a specific Hive post',
+    schemas.getRebloggedBySchema,
+    adaptHandler(contentAdvancedTools.getRebloggedBy)
+  );
+
+  server.tool(
+    'get_account_notifications',
+    'Get account notifications (mentions, replies, votes, etc.)',
+    schemas.getAccountNotificationsSchema,
+    adaptHandler(contentAdvancedTools.getAccountNotifications)
+  );
+
+  server.tool(
+    'get_discussion',
+    'Get full threaded discussion for a Hive post (root post and all nested replies)',
+    schemas.getDiscussionSchema,
+    adaptHandler(contentAdvancedTools.getDiscussion)
+  );
+
+  // Content update/delete tools
+  server.tool(
+    'update_post',
+    'Update/edit an existing Hive post or comment',
+    schemas.updatePostSchema,
+    adaptHandler(contentCreationTools.updatePost)
+  );
+
+  server.tool(
+    'delete_comment',
+    'Delete a Hive post or comment (marks for deletion)',
+    schemas.deleteCommentSchema,
+    adaptHandler(contentCreationTools.deleteComment)
+  );
+
+  // Resource Credits tools
+  server.tool(
+    'get_rc_accounts',
+    'Get Resource Credits information for one or more Hive accounts',
+    schemas.getRcAccountsSchema,
+    adaptHandler(resourceCreditsTools.getRcAccounts)
+  );
+
+  server.tool(
+    'delegate_rc',
+    'Delegate Resource Credits to another Hive account',
+    schemas.delegateRcSchema,
+    adaptHandler(resourceCreditsTools.delegateRc)
   );
 }

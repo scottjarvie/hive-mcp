@@ -5,7 +5,7 @@
  * Purpose: Central schema export point for tool registration.
  * Key elements: Schema shape extraction and exports
  * Dependencies: zod, schema modules
- * Last update: Migration to ESM
+ * Last update: Phase 3 - Added content-advanced and resource-credits schemas
  */
 
 import { z } from 'zod';
@@ -20,6 +20,8 @@ import * as messagingSchemas from './messaging.js';
 import * as promptsSchemas from './prompts.js';
 import * as socialSchemas from './social.js';
 import * as communitySchemas from './community.js';
+import * as contentAdvancedSchemas from './content-advanced.js';
+import * as resourceCreditsSchemas from './resource-credits.js';
 export * from './common.js';
 
 // Helper function to extract the shape from a ZodObject
@@ -76,3 +78,16 @@ export const listCommunitiesSchema = getZodShape(communitySchemas.listCommunitie
 export const getCommunitySubscribersSchema = getZodShape(communitySchemas.getCommunitySubscribersSchema);
 export const subscribeCommunitySchema = getZodShape(communitySchemas.subscribeCommunitySchema);
 export const unsubscribeCommunitySchema = getZodShape(communitySchemas.unsubscribeCommunitySchema);
+
+// Advanced content schemas
+export const getContentRepliesSchema = getZodShape(contentAdvancedSchemas.getContentRepliesSchema);
+export const getActiveVotesSchema = getZodShape(contentAdvancedSchemas.getActiveVotesSchema);
+export const getRebloggedBySchema = getZodShape(contentAdvancedSchemas.getRebloggedBySchema);
+export const getAccountNotificationsSchema = getZodShape(contentAdvancedSchemas.getAccountNotificationsSchema);
+export const getDiscussionSchema = getZodShape(contentAdvancedSchemas.getDiscussionSchema);
+export const updatePostSchema = getZodShape(contentAdvancedSchemas.updatePostSchema);
+export const deleteCommentSchema = getZodShape(contentAdvancedSchemas.deleteCommentSchema);
+
+// Resource Credits schemas
+export const delegateRcSchema = getZodShape(resourceCreditsSchemas.delegateRcSchema);
+export const getRcAccountsSchema = getZodShape(resourceCreditsSchemas.getRcAccountsSchema);
