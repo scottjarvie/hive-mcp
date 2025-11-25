@@ -32,19 +32,41 @@
 
 ### Testing Methodology
 
-**IMPORTANT:** Tests should be conducted by giving the AI the **natural language prompt** and observing:
+**CRITICAL:** Tests must be conducted by providing the AI with the **exact natural language prompt** as written, without any hints or guidance about which MCP tools to use.
 
-1. **Which tools the AI chooses to call** - Don't predetermine or "lead the witness"
-2. **The parameters the AI selects** - Did it interpret the request correctly?
-3. **The AI's synthesized answer** - How well did it answer the user's question?
+**Testing Process:**
 
-The tester should:
+1. **Provide the prompt as-is**: Copy the prompt exactly as written in this document and give it to the AI assistant. Do NOT indicate which tools should be called or provide any hints about expected behavior.
 
-- Copy the prompt exactly as written
-- Let the AI decide which MCP tools to call
-- Observe which tools were called and their response sizes
-- Evaluate the final answer the AI provides to the user
-- Rate based on the **quality of the answer**, not just raw tool output
+2. **Observe the AI's behavior**: Watch what happens:
+
+   - Which MCP tools does the AI choose to call?
+   - What parameters does the AI select for each tool call?
+   - **CRITICAL**: Does the AI provide a synthesized answer to the user based on the MCP tool results?
+   - What is the final answer the AI provides to the user? (This is what we're judging, NOT the raw MCP output)
+
+3. **Assess the results**: After observing the AI's behavior:
+   - **PRIMARY FOCUS**: Evaluate the **quality of the AI's synthesized answer** to the user. The AI MUST transform the raw MCP tool results into a clear, useful response for the user. We are NOT judging the raw MCP tool output - we are judging how well the AI interpreted, synthesized, and presented that data to answer the user's question.
+   - Note whether the AI selected appropriate tools
+   - Check if the AI actually provided a user-facing answer (not just dumped raw JSON/data)
+   - Compare actual tool usage against what might have been expected (for documentation purposes only - this comparison happens AFTER testing, not during)
+   - Rate the result based on how well the AI answered the user's question in natural language
+
+**Key Rules:**
+
+- **DO**: Provide the prompt exactly as written, let the AI decide everything, observe and document what happened
+- **DO**: Expect the AI to provide a synthesized, user-friendly answer based on the MCP tool results (not raw data dump)
+- **DON'T**: Indicate expected tools, suggest tool names, or guide the AI in any way during testing
+- **DON'T**: Judge based on raw MCP tool output - only judge the AI's synthesized response to the user
+- **AFTER**: You may compare actual vs expected tool usage for analysis, but this comparison is for documentation only and should not influence the test execution
+
+**What We're Judging:**
+
+- ✅ The AI's synthesized answer to the user (natural language, clear, complete)
+- ✅ How well the AI interpreted and presented the MCP tool results
+- ✅ Whether the answer actually addresses the user's question
+- ❌ NOT the raw MCP tool output/JSON
+- ❌ NOT whether the tools returned data (that's assumed - we care about the AI's presentation)
 
 ### Scoring Scale (1.0-10.0)
 
@@ -66,12 +88,20 @@ The tester should:
 
 ### What to Track During Testing
 
-1. **Tools Called**: Which MCP tools did the AI choose? List them (e.g., `account_info`, `social_info`)
+**During the test (observation phase):**
+
+1. **Tools Called**: Which MCP tools did the AI choose? List them with their parameters (e.g., `account_info`, `social_info`)
 2. **Response Sizes**: Approximate size of each tool response (small/medium/large or byte count)
-3. **Tool Selection**: Did the AI pick the right tools? Were any unnecessary?
-4. **Answer Quality**: Did the AI synthesize a good answer from the tool results?
-5. **Accuracy**: Was the information correct and complete?
-6. **Error Handling**: How did it handle edge cases or errors?
+3. **AI's Final Answer**: **THIS IS THE PRIMARY FOCUS** - What synthesized answer did the AI provide to the user? Did it transform the raw MCP data into a clear, natural language response? Was it accurate and complete?
+
+**After the test (assessment phase):**
+
+4. **Answer Synthesis Quality**: **MOST IMPORTANT** - Did the AI synthesize a good answer from the tool results? Did it present the information in a user-friendly way, or did it just dump raw data? This is what we're scoring.
+5. **Tool Selection Analysis**: Did the AI pick appropriate tools? Were any unnecessary or missing?
+6. **Accuracy**: Was the information in the AI's synthesized answer correct and complete?
+7. **User Experience**: Was the answer clear, well-formatted, and actually helpful to the user?
+8. **Error Handling**: How did it handle edge cases or errors?
+9. **Comparison**: (Optional) Compare actual tool usage vs. what might have been expected - this is for analysis/documentation only, not part of the test itself
 
 ### Recommendations Options
 
@@ -115,6 +145,7 @@ These are **read-only operations** that anyone can perform without authenticatio
 - **Prompt:** "Get the transaction history for @blocktrades"
 - **Val:** 7.5 | **Exp:** 7.5 | **Res:** 8.0 | **Tools:** 1 | **Status:** ✅
 - **Observations:** Returns recent operations with human-readable timestamps, tx IDs, and details. For witness accounts, history dominated by producer_rewards. operation_filter param available for filtering.
+- **Enhancement Applied:** Added automatic HP conversion for VESTS values in operation details. Operations containing vesting_shares now include `vesting_shares_hp` field with HP equivalent (e.g., "461.191857 VESTS" → "0.280 HP"). This makes it easier to understand the value of rewards and delegations in history.
 - **Recommendation:** Keep
 
 #### 1.1.3 Check pending rewards
@@ -129,7 +160,8 @@ These are **read-only operations** that anyone can perform without authenticatio
 - **Prompt:** "Show me who @blocktrades has delegated HP to"
 - **Val:** 7.5 | **Exp:** 7.5 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
 - **Observations:** Returns all outgoing delegations with delegatee, VESTS amount, and delegation start date. Clear single-call response.
-- **Recommendation:** Keep (could add HP equivalent but VESTS sufficient)
+- **Enhancement Applied:** HP conversion was already implemented in the codebase. Verified that delegations response includes both `hp` field (e.g., "2391.234 HP") and `vesting_shares` field, plus `total_delegated_hp` summary. This makes it immediately clear how much HP is delegated without manual conversion.
+- **Recommendation:** Keep
 
 #### 1.1.5 View account notifications
 
@@ -150,14 +182,16 @@ These are **read-only operations** that anyone can perform without authenticatio
 - **Prompt:** "Analyze @jarvie's posting patterns over the last month"
 - **Val:** 9.0 | **Exp:** 5.5 | **Res:** 7.0 | **Tools:** 2 | **Status:** ✅
 - **Observations:** Required 2 calls (get_posts + get_history). Tools lack time-range filtering, so AI must manually filter. Got post frequency, community spread, and comment activity data. Analysis synthesis done by AI.
-- **Recommendation:** Enhance - add date-range filtering to posts/history tools
+- **Enhancement Applied:** Added `since` parameter to `getPosts()` function for both `by_tag` and `by_user` actions. Now supports date filtering: `getPosts({action: 'by_user', username: 'jarvie', category: 'posts', since: '2025-10-25'})`. The tool fetches extra posts and filters client-side to ensure accurate date-based results. Response includes `since` field and `total_fetched` count for transparency. This significantly improves posting pattern analysis by allowing direct time-range queries.
+- **Recommendation:** Keep
 
 #### 1.1.8 Check voting power
 
 - **Prompt:** "What is @blocktrades's current voting power?"
 - **Val:** 7.5 | **Exp:** 8.0 | **Res:** 7.5 | **Tools:** 1 | **Status:** ✅
 - **Observations:** Tool returns raw manabar data (current_mana, last_update_time) but not pre-calculated percentage. AI must calculate: current_mana/max_vp \* 100. Data available but requires interpretation.
-- **Recommendation:** Enhance - add calculated voting_power_percent field
+- **Enhancement Applied:** Added comprehensive `voting_power` section to account info response with: `current_percent` (calculated percentage with mana regeneration), `current_mana` and `max_mana` (raw values), `last_vote` (human-readable timestamp using formatTimestamp), and `full_recharge_at` (estimated time to 100% recharge). Also added `downvote_power.current_percent` for downvote mana. The calculation accounts for mana regeneration (20% per day) so the percentage reflects current state accurately. This eliminates the need for AI to perform calculations and provides immediately usable voting power information.
+- **Recommendation:** Keep
 
 #### 1.1.9 Compare accounts ⭐
 
