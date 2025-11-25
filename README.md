@@ -3,19 +3,20 @@
 [![smithery badge](https://smithery.ai/badge/@gluneau/hive-mcp-server)](https://smithery.ai/server/@gluneau/hive-mcp-server)
 [![glama badge](https://glama.ai/mcp/servers/pobodojvqv/badge)](https://glama.ai/mcp/servers/pobodojvqv)
 
-An MCP server that enables AI assistants to interact with the Hive blockchain through the Model Context Protocol.
+A comprehensive MCP server that enables AI assistants to interact with the Hive blockchain and Hive Engine sidechain through the Model Context Protocol. Built with [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) for modern, type-safe blockchain interactions.
 
 ## Overview
 
-This server provides a bridge between AI assistants (like Claude) and the Hive blockchain, allowing AI models to:
+This server provides a bridge between AI assistants (like Claude) and the Hive ecosystem, allowing AI models to:
 
-- Fetch account information and history
-- Retrieve blog posts and discussions
-- Get posts by tag or user
-- Vote on content and create posts (when properly authenticated)
-- Send HIVE or HBD tokens to other accounts
-- Sign and verify messages with Hive keys
-- Send and receive encrypted messages
+- **Account & Blockchain**: Fetch account information, history, delegations, and chain properties
+- **Content**: Read posts, comments, votes, and discussions; create and edit content
+- **Social**: Follow/unfollow accounts, mute users, reblog posts
+- **Communities**: Browse and interact with Hive communities
+- **DeFi**: Stake HIVE (power up/down), manage savings, claim rewards, convert tokens
+- **Resource Credits**: Monitor and delegate RC for account operations
+- **Cryptography**: Sign/verify messages, encrypt/decrypt private communications
+- **Hive Engine**: Trade tokens, manage NFTs, swap via liquidity pools
 
 ## Features
 
@@ -24,36 +25,176 @@ This server provides a bridge between AI assistants (like Claude) and the Hive b
 - `create-post` - Creates a structured prompt to guide the AI through creating a new Hive post with the right format and tags
 - `analyze-account` - Generates a prompt to analyze a Hive account's statistics, posting history, and activity patterns
 
-### Tools
+### Tools (84 total)
 
-#### Reading Data
+#### Account & Blockchain (4 tools)
 
-- `get_account_info` - Get detailed information about a Hive blockchain account
-- `get_post_content` - Retrieve a specific post by author and permlink
-- `get_posts_by_tag` - Retrieve posts by tag and category (trending, hot, etc.)
-- `get_posts_by_user` - Fetch posts from a specific user or their feed
-- `get_account_history` - Get transaction history for an account with optional operation filtering
-- `get_chain_properties` - Fetch current Hive blockchain properties and statistics
-- `get_vesting_delegations` - Get a list of vesting delegations made by a specific account
+| Tool | Description |
+|------|-------------|
+| `get_account_info` | Get detailed account information including balance, voting power, and authority |
+| `get_account_history` | Get transaction history with optional operation type filtering |
+| `get_vesting_delegations` | Get HP delegations made by an account |
+| `get_chain_properties` | Get current blockchain properties and statistics |
 
-#### Blockchain Interactions (Require Authentication)
+#### Content Reading (8 tools)
 
-- `vote_on_post` - Vote on Hive content (requires posting key)
-- `create_post` - Create new blog posts on the Hive blockchain (requires posting key)
-- `create_comment` - Comment on existing posts or reply to comments (requires posting key)
-- `send_token` - Send HIVE or HBD cryptocurrency to other accounts (requires active key)
+| Tool | Description |
+|------|-------------|
+| `get_post_content` | Get a specific post by author and permlink |
+| `get_posts_by_tag` | Get posts filtered by tag (trending, hot, created, etc.) |
+| `get_posts_by_user` | Get posts from a user's blog or feed |
+| `get_content_replies` | Get all replies/comments on a post |
+| `get_active_votes` | Get all votes on a post with voter details |
+| `get_reblogged_by` | Get list of accounts that reblogged a post |
+| `get_account_notifications` | Get account notifications (mentions, replies, votes) |
+| `get_discussion` | Get full threaded discussion for a post |
 
-#### Cryptography
+#### Content Writing (5 tools)
 
-- `sign_message` - Sign a message using a Hive private key
-- `verify_signature` - Verify a message signature against a Hive public key
+| Tool | Key | Description |
+|------|-----|-------------|
+| `create_post` | Posting | Create a new blog post |
+| `create_comment` | Posting | Comment on a post or reply to a comment |
+| `update_post` | Posting | Edit an existing post or comment |
+| `delete_comment` | Posting | Delete a post or comment |
+| `vote_on_post` | Posting | Upvote or downvote content |
 
-#### Encrypted Messaging
+#### Social (8 tools)
 
-- `encrypt_message` - Encrypt a message for a specific Hive account
-- `decrypt_message` - Decrypt an encrypted message from a specific Hive account
-- `send_encrypted_message` - Send an encrypted message using a token transfer
-- `get_encrypted_messages` - Retrieve and optionally decrypt messages from account history
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_followers` | - | Get list of followers for an account |
+| `get_following` | - | Get list of accounts a user follows |
+| `get_follow_count` | - | Get follower/following counts |
+| `follow_account` | Posting | Follow an account |
+| `unfollow_account` | Posting | Unfollow an account |
+| `mute_account` | Posting | Mute an account |
+| `unmute_account` | Posting | Unmute an account |
+| `reblog_post` | Posting | Reblog (resteem) a post |
+
+#### Communities (5 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_community` | - | Get community details |
+| `list_communities` | - | List and search communities |
+| `get_community_subscribers` | - | Get community subscriber list |
+| `subscribe_community` | Posting | Subscribe to a community |
+| `unsubscribe_community` | Posting | Unsubscribe from a community |
+
+#### Cryptography (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sign_message` | Sign a message with a Hive private key |
+| `verify_signature` | Verify a signature against a public key |
+
+#### Encrypted Messaging (4 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `encrypt_message` | Memo | Encrypt a message for another account |
+| `decrypt_message` | Memo | Decrypt a received encrypted message |
+| `send_encrypted_message` | Active + Memo | Send encrypted message via token transfer |
+| `get_encrypted_messages` | Memo | Retrieve and decrypt message history |
+
+#### Token Transfers (1 tool)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `send_token` | Active | Send HIVE or HBD to another account |
+
+#### DeFi - Staking (5 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `power_up` | Active | Convert HIVE to Hive Power (HP) |
+| `power_down` | Active | Start power down (13-week unstaking) |
+| `cancel_power_down` | Active | Cancel ongoing power down |
+| `delegate_hp` | Active | Delegate HP to another account |
+| `undelegate_hp` | Active | Remove HP delegation |
+
+#### DeFi - Rewards (3 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `claim_rewards` | Posting | Claim pending author/curation rewards |
+| `get_reward_fund` | - | Get reward pool information |
+| `get_pending_rewards` | - | Get unclaimed rewards for an account |
+
+#### DeFi - Savings (4 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `transfer_to_savings` | Active | Deposit to savings (HBD earns ~20% APR) |
+| `transfer_from_savings` | Active | Withdraw from savings (3-day wait) |
+| `cancel_savings_withdraw` | Active | Cancel pending withdrawal |
+| `get_savings_withdrawals` | - | Get pending withdrawals |
+
+#### DeFi - Conversions (4 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `convert_hbd` | Active | Convert HBD to HIVE (3.5-day conversion) |
+| `collateralized_convert` | Active | Instant HBD→HIVE with collateral |
+| `get_conversion_requests` | - | Get pending conversions |
+| `get_current_price_feed` | - | Get HBD/HIVE median price |
+
+#### Resource Credits (2 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_rc_accounts` | - | Get RC info for accounts |
+| `delegate_rc` | Posting | Delegate RC to another account |
+
+#### Hive Engine - Tokens (8 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_he_token_balance` | - | Get HE token balances for an account |
+| `get_he_token_info` | - | Get token details (supply, issuer, etc.) |
+| `get_he_tokens_list` | - | List all tokens with filtering |
+| `transfer_he_token` | Active | Transfer HE tokens |
+| `stake_he_token` | Active | Stake tokens for voting power |
+| `unstake_he_token` | Active | Begin unstaking (cooldown applies) |
+| `delegate_he_token` | Active | Delegate staked tokens |
+| `undelegate_he_token` | Active | Remove token delegation |
+
+#### Hive Engine - Market (7 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_he_market_orderbook` | - | Get buy/sell orders for a token |
+| `get_he_market_history` | - | Get recent trades |
+| `get_he_market_metrics` | - | Get price, volume, market cap |
+| `get_he_open_orders` | - | Get user's open orders |
+| `place_he_buy_order` | Active | Place limit buy order |
+| `place_he_sell_order` | Active | Place limit sell order |
+| `cancel_he_order` | Active | Cancel an open order |
+
+#### Hive Engine - NFTs (8 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_he_nft_collection` | - | Get NFTs owned by an account |
+| `get_he_nft_info` | - | Get NFT details |
+| `get_he_nft_properties` | - | Get NFT collection schema |
+| `get_he_nft_sell_orders` | - | Get NFTs for sale |
+| `transfer_he_nft` | Active | Transfer NFTs |
+| `sell_he_nft` | Active | List NFTs for sale |
+| `cancel_he_nft_sale` | Active | Cancel NFT listing |
+| `buy_he_nft` | Active | Purchase NFTs |
+
+#### Hive Engine - Liquidity Pools (6 tools)
+
+| Tool | Key | Description |
+|------|-----|-------------|
+| `get_he_pool_info` | - | Get pool details |
+| `get_he_pools_list` | - | List all liquidity pools |
+| `estimate_he_swap` | - | Calculate swap output/slippage |
+| `swap_he_tokens` | Active | Swap tokens via DEX |
+| `add_he_liquidity` | Active | Add liquidity to a pool |
+| `remove_he_liquidity` | Active | Remove liquidity from a pool |
 
 ## Debugging with MCP Inspector
 
@@ -111,193 +252,128 @@ To use this server with Claude Desktop:
 
 The same JSON configuration works for Windsurf (in `windsurf_config.json`) and for Cursor (in `~/.cursor/mcp.json` for version >= 0.47).
 
-In previous versions, you'll have to use the 1 line command format in the MCP section of the Settings :
+In previous versions, you'll have to use the 1 line command format in the MCP section of the Settings:
 `env HIVE_USERNAME=your-hive-username env HIVE_POSTING_KEY=your-hive-posting-private-key env HIVE_ACTIVE_KEY=your-hive-active-private-key env HIVE_MEMO_KEY=your-hive-memo-private-key npx -y @gluneau/hive-mcp-server`
 
 ## Examples
 
 Once connected to an MCP client, you can ask questions like:
 
+### Account & Content
 - "What are the trending posts in the #photography tag on Hive?"
 - "Show me the recent posts from username 'alice'"
 - "What's the account balance and details for 'bob'?"
 - "Get the transaction history for 'charlie'"
 - "Can you upvote the post by 'dave' with permlink 'my-awesome-post'?"
 - "Create a new post on Hive about AI technology"
-- "Send 1 HIVE to user 'frank' with the memo 'Thanks for your help!'"
-- "Sign this message with my Hive posting key: 'Verifying my identity'"
-- "What are the current Hive blockchain properties?"
-- "Show me the vesting delegations made by user 'grace'"
+
+### Social & Communities
+- "Who follows @alice on Hive?"
+- "How many followers does @bob have?"
+- "Follow the account @photography-daily"
+- "List all Hive communities about photography"
+- "Subscribe to the hive-167922 community"
+- "Reblog the post by @alice with permlink 'my-photo'"
+
+### DeFi Operations
+- "Power up 100 HIVE to increase my voting power"
+- "What rewards do I have pending to claim?"
+- "Claim all my pending rewards"
+- "Transfer 50 HBD to my savings account"
+- "What's the current HBD to HIVE exchange rate?"
+- "Delegate 500 HP to @newcomer-support"
+
+### Encrypted Messaging
 - "Encrypt this message for user 'alice': 'This is a secret message'"
 - "Decrypt this message from 'bob': '#4f3a5b...'"
 - "Send an encrypted message to 'charlie' saying 'Let's meet tomorrow'"
 - "Show me my encrypted messages and decrypt them"
-- "Get the last 10 encrypted messages I've exchanged with 'dave'"
 
-## Tool Documentation
+### Hive Engine
+- "What's my LEO token balance?"
+- "Show me the orderbook for the LEO token"
+- "Place a buy order for 100 LEO at 0.5 SWAP.HIVE"
+- "What NFTs do I own on Hive Engine?"
+- "Swap 10 SWAP.HIVE for BEE tokens"
+- "Add liquidity to the SWAP.HIVE:LEO pool"
 
-### `get_account_info`
+### Resource Credits
+- "What are my current Resource Credits?"
+- "Delegate 5 billion RC to @new-user"
 
-Fetches detailed information about a Hive blockchain account including balance, authority, voting power, and other metrics.
+## Architecture
 
-- Parameters:
-  - `username`: Hive username to fetch information for
+### Multi-Node Failover
 
-### `get_post_content`
+The server implements automatic failover for both Hive and Hive Engine APIs:
 
-Retrieves a specific Hive blog post identified by author and permlink.
+**Hive API Nodes:**
+- `https://api.hive.blog`
+- `https://api.deathwing.me`
+- `https://hive-api.arcange.eu`
+- `https://api.openhive.network`
 
-- Parameters:
-  - `author`: Author of the post
-  - `permlink`: Permlink of the post
+**Hive Engine API Nodes:**
+- `https://api.hive-engine.com/rpc`
+- `https://engine.rishipanthee.com`
+- `https://herpc.dtools.dev`
+- `https://api.primersion.com`
 
-### `get_posts_by_tag`
-
-Retrieves Hive posts filtered by a specific tag and sorted by a category.
-
-- Parameters:
-  - `category`: Sorting category (trending, hot, created, etc.)
-  - `tag`: The tag to filter posts by
-  - `limit`: Number of posts to return (1-20)
-
-### `get_posts_by_user`
-
-Retrieves posts authored by or in the feed of a specific Hive user.
-
-- Parameters:
-  - `category`: Type of user posts to fetch (blog or feed)
-  - `username`: Hive username to fetch posts for
-  - `limit`: Number of posts to return (1-20)
-
-### `get_account_history`
-
-Retrieves transaction history for a Hive account with optional operation type filtering.
-
-- Parameters:
-  - `username`: Hive username
-  - `limit`: Number of operations to return
-  - `operation_filter`: Optional list of operation types to filter for
-
-### `get_chain_properties`
-
-Fetch current Hive blockchain properties and statistics.
-
-- Parameters: None
-
-### `get_vesting_delegations`
-
-Get a list of vesting delegations made by a specific Hive account.
-
-- Parameters:
-  - `username`: Hive account to get delegations for
-  - `limit`: Maximum number of delegations to retrieve
-  - `from`: Optional starting account for pagination
-
-### `vote_on_post`
-
-Vote on a Hive post (upvote or downvote) using the configured Hive account.
-
-- Parameters:
-  - `author`: Author of the post to vote on
-  - `permlink`: Permlink of the post to vote on
-  - `weight`: Vote weight from -10000 (100% downvote) to 10000 (100% upvote)
-
-### `create_post`
-
-Create a new blog post on the Hive blockchain using the configured account.
-
-- Parameters:
-  - `title`: Title of the blog post
-  - `body`: Content of the blog post (Markdown supported)
-  - `tags`: Tags for the post
-  - Various optional parameters for rewards, beneficiaries, etc.
-
-### `create_comment`
-
-Create a comment on an existing Hive post or reply to another comment.
-
-- Parameters:
-  - `parent_author`: Username of the post author or comment you're replying to
-  - `parent_permlink`: Permlink of the post or comment you're replying to
-  - `body`: Content of the comment (Markdown supported)
-  - Various optional parameters for rewards, beneficiaries, etc.
-
-### `send_token`
-
-Send HIVE or HBD tokens to another Hive account using the configured account.
-
-- Parameters:
-  - `to`: Recipient Hive username
-  - `amount`: Amount of tokens to send
-  - `currency`: Currency to send (HIVE or HBD)
-  - `memo`: Optional memo to include with the transaction
-
-### `sign_message`
-
-Sign a message using a Hive private key from environment variables.
-
-- Parameters:
-  - `message`: Message to sign
-  - `key_type`: Type of key to use (posting, active, or memo)
-
-### `verify_signature`
-
-Verify a digital signature against a Hive public key.
-
-- Parameters:
-  - `message_hash`: The SHA-256 hash of the message in hex format
-  - `signature`: Signature string to verify
-  - `public_key`: Public key to verify against
-
-### `encrypt_message`
-
-Encrypt a message for a specific Hive account using memo encryption.
-
-- Parameters:
-  - `message`: Message to encrypt
-  - `recipient`: Hive username of the recipient
-
-### `decrypt_message`
-
-Decrypt an encrypted message received from a specific Hive account.
-
-- Parameters:
-  - `encrypted_message`: Encrypted message (starts with #)
-  - `sender`: Hive username of the sender
-
-### `send_encrypted_message`
-
-Send an encrypted message to a Hive account using a small token transfer.
-
-- Parameters:
-  - `message`: Message to encrypt and send
-  - `recipient`: Hive username of the recipient
-  - `amount`: Amount of HIVE to send (minimum 0.001, default: 0.001)
-
-### `get_encrypted_messages`
-
-Retrieve encrypted messages from account history with optional decryption.
-
-- Parameters:
-  - `username`: Hive username to fetch encrypted messages for
-  - `limit`: Maximum number of messages to retrieve (default: 20)
-  - `decrypt`: Whether to attempt decryption of messages (default: false)
+Failed nodes are automatically marked unhealthy and requests are routed to healthy nodes. Node health is periodically re-evaluated.
 
 ## Development
 
 ### Project Structure
 
-- `src/index.ts` - Main server implementation
-- `src/tools/` - Implementation of all tools
-- `src/schemas/` - Zod schemas for tool parameters
-- `src/utils/` - Utility functions for interacting with the Hive blockchain
-- `src/config/` - Client Configuration and log level handling
+```
+src/
+├── index.ts              # Main server entry point
+├── config/               # Client configuration and environment handling
+├── schemas/              # Zod schemas for tool parameter validation
+│   ├── account.ts
+│   ├── content.ts
+│   ├── social.ts
+│   ├── community.ts
+│   ├── staking.ts
+│   ├── hive-engine-*.ts
+│   └── ...
+├── tools/                # Tool implementations
+│   ├── account.ts
+│   ├── content.ts
+│   ├── social.ts
+│   ├── community.ts
+│   ├── staking.ts
+│   ├── hive-engine-*.ts
+│   └── ...
+└── utils/
+    ├── api.ts            # Hive API calls with failover
+    ├── hive-engine-api.ts # HE API calls with failover
+    ├── response.ts       # Response formatting
+    ├── error.ts          # Error handling
+    └── logger.ts         # Logging utilities
+```
 
 ### Dependencies
 
-- [@hiveio/dhive](https://www.npmjs.com/package/@hiveio/dhive) - Hive blockchain client
+- [@hiveio/wax](https://www.npmjs.com/package/@hiveio/wax) - Modern Hive blockchain client
 - [@modelcontextprotocol/sdk](https://www.npmjs.com/package/@modelcontextprotocol/sdk) - MCP SDK
 - [zod](https://www.npmjs.com/package/zod) - Schema validation
+
+### Running Tests
+
+```bash
+npm test
+```
+
+### Building
+
+```bash
+npm run build
+```
+
+## Tool Reference
+
+For detailed parameter documentation for all 84 tools, see [docs/TOOLS.md](docs/TOOLS.md).
 
 ## License
 
