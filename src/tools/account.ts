@@ -1,27 +1,49 @@
-// Account-related tools implementation
-import client from '../config/client';
-import { Response } from '../utils/response';
-import { handleError } from '../utils/error';
-import { successJson, errorResponse } from '../utils/response';
+/**
+ * Account-related Tools Implementation
+ * 
+ * Summary: Provides tools for fetching Hive account information, history, and delegations.
+ * Purpose: Read-only account data retrieval from the Hive blockchain.
+ * Key elements: getAccountInfo, getAccountHistory, getVestingDelegations
+ * Dependencies: @hiveio/wax (via config/client), utils/response, utils/error, utils/api
+ * Last update: Migration from dhive to WAX library
+ */
 
-// Get account information
+import { getChain } from '../config/client.js';
+import { type Response } from '../utils/response.js';
+import { handleError } from '../utils/error.js';
+import { successJson, errorResponse } from '../utils/response.js';
+import { callCondenserApi } from '../utils/api.js';
+
+/**
+ * Get account information
+ * Fetches detailed information about a Hive blockchain account
+ */
 export async function getAccountInfo(
   params: { username: string }
 ): Promise<Response> {
   try {
-    const accounts = await client.database.getAccounts([params.username]);
-    if (accounts.length === 0) {
+    const chain = await getChain();
+    
+    // Use WAX database_api to get account info
+    const result = await chain.api.database_api.find_accounts({
+      accounts: [params.username]
+    });
+    
+    if (!result.accounts || result.accounts.length === 0) {
       return errorResponse(`Error: Account ${params.username} not found`);
     }
     
-    const accountData = accounts[0];
+    const accountData = result.accounts[0];
     return successJson(accountData);
   } catch (error) {
     return errorResponse(handleError(error, 'get_account_info'));
   }
 }
 
-// Get account history
+/**
+ * Get account history
+ * Retrieves transaction history for a Hive account with optional operation filtering
+ */
 export async function getAccountHistory(
   params: { 
     username: string; 
@@ -30,24 +52,13 @@ export async function getAccountHistory(
   }
 ): Promise<Response> {
   try {
-    // The getAccountHistory method needs a starting point (from) parameter
-    // We'll use -1 to get the most recent transactions
-    const from = -1;
-
-    // Convert string operation types to their numerical bitmask if provided
-    let operation_bitmask = undefined;
-    if (params.operation_filter && params.operation_filter.length > 0) {
-      // For simplicity, we're skipping the bitmask transformation
-    }
-
-    const history = await client.database.getAccountHistory(
-      params.username,
-      from,
-      params.limit,
-      operation_bitmask
+    // Use direct API call for account history
+    const result = await callCondenserApi<Array<[number, { timestamp: string; op: [string, unknown]; trx_id: string }]>>(
+      'get_account_history',
+      [params.username, -1, params.limit]
     );
 
-    if (!history || !Array.isArray(history)) {
+    if (!result || !Array.isArray(result)) {
       return successJson({
         account: params.username,
         operations_count: 0,
@@ -56,7 +67,7 @@ export async function getAccountHistory(
     }
 
     // Format the history into a structured object
-    const formattedHistory = history
+    const formattedHistory = result
       .map(([index, operation]) => {
         const { timestamp, op, trx_id } = operation;
         const opType = op[0];
@@ -79,7 +90,7 @@ export async function getAccountHistory(
           details: opData,
         };
       })
-      .filter(Boolean); // Remove null entries (filtered out operations)
+      .filter(Boolean);
 
     return successJson({
       account: params.username,
@@ -91,7 +102,10 @@ export async function getAccountHistory(
   }
 }
 
-// Get vesting delegations
+/**
+ * Get vesting delegations
+ * Retrieves a list of vesting delegations made by a specific Hive account
+ */
 export async function getVestingDelegations(
   params: { 
     username: string; 
@@ -100,14 +114,26 @@ export async function getVestingDelegations(
   }
 ): Promise<Response> {
   try {
-    const delegations = await client.database.getVestingDelegations(
-      params.username,
-      params.from || "",
-      params.limit
+    // Use direct API call for vesting delegations
+    const result = await callCondenserApi<Array<{
+      delegator: string;
+      delegatee: string;
+      vesting_shares: string;
+      min_delegation_time: string;
+    }>>(
+      'get_vesting_delegations',
+      [params.username, params.from || '', params.limit]
     );
     
-    // Format the data for better readability
-    const formattedDelegations = delegations.map(delegation => ({
+    if (!result || !Array.isArray(result)) {
+      return successJson({
+        account: params.username,
+        delegations_count: 0,
+        delegations: []
+      });
+    }
+    
+    const formattedDelegations = result.map(delegation => ({
       delegator: delegation.delegator,
       delegatee: delegation.delegatee,
       vesting_shares: delegation.vesting_shares,

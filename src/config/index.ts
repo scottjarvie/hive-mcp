@@ -1,18 +1,30 @@
-// Configuration manager for environment variables and settings
-import { PrivateKey } from '@hiveio/dhive';
-import { readFileSync } from 'fs';
+/**
+ * Configuration Manager
+ * 
+ * Summary: Manages environment variables, settings, and key validation for the Hive MCP server.
+ * Purpose: Centralizes configuration loading and validation.
+ * Key elements: HiveConfig, AppConfig, validatePrivateKey, getConfig
+ * Dependencies: fs, path
+ * Last update: Migration from dhive to WAX library for key validation
+ */
+
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 // Read package.json for server info
 function getPackageInfo(): { name: string; version: string } {
   try {
-    const packagePath = join(__dirname, '..', 'package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
-    return {
-      name: packageJson.name || 'HiveServer',
-      version: packageJson.version || '1.0.0'
-    };
-  } catch (error) {
+    // Use process.cwd() which works in both ESM and CJS
+    const packagePath = join(process.cwd(), 'package.json');
+    if (existsSync(packagePath)) {
+      const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+      return {
+        name: packageJson.name || 'HiveServer',
+        version: packageJson.version || '1.0.0'
+      };
+    }
+    return { name: 'HiveServer', version: '1.0.0' };
+  } catch {
     // Fallback values if package.json cannot be read
     return { name: 'HiveServer', version: '1.0.0' };
   }
@@ -48,6 +60,7 @@ const readEnvConfig = (): HiveConfig => {
     postingKey: process.env.HIVE_POSTING_KEY,
     activeKey: process.env.HIVE_ACTIVE_KEY,
     memoKey: process.env.HIVE_MEMO_KEY,
+    ownerKey: process.env.HIVE_OWNER_KEY,
   };
 };
 
@@ -66,14 +79,34 @@ const defaultConfig: AppConfig = {
   },
 };
 
-// Validate a private key format (without logging the actual key)
+/**
+ * Validate a private key format (without logging the actual key)
+ * WIF private keys start with '5' and are 51 characters long (standard format)
+ */
 export const validatePrivateKey = (key: string | undefined): boolean => {
   if (!key) return false;
 
   try {
-    PrivateKey.fromString(key);
+    // WIF private key validation:
+    // - Starts with '5' (for standard Hive/Bitcoin-style keys)
+    // - Is 51 or 52 characters long
+    // - Contains only base58 characters
+    const base58Chars = /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/;
+    
+    if (!key.startsWith('5')) {
+      return false;
+    }
+    
+    if (key.length < 51 || key.length > 52) {
+      return false;
+    }
+    
+    if (!base58Chars.test(key)) {
+      return false;
+    }
+    
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 };

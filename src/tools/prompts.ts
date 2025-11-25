@@ -1,5 +1,14 @@
-// src/tools/prompts.ts
-import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol';
+/**
+ * Prompt Handlers
+ * 
+ * Summary: Handles MCP prompts for Hive operations.
+ * Purpose: Provides interactive prompts for creating posts and analyzing accounts.
+ * Key elements: createPostPrompt, analyzeAccountPrompt
+ * Dependencies: @modelcontextprotocol/sdk
+ * Last update: Migration to ESM
+ */
+
+import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 // Handler for the create-post prompt
 export async function createPostPrompt(

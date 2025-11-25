@@ -1,6 +1,6 @@
 // Account-related schemas
 import { z } from 'zod';
-import { operationFilterSchema } from './common';
+import { operationFilterSchema } from './common.js';
 
 // Schema for get_account_info tool
 export const getAccountInfoSchema = z.object({

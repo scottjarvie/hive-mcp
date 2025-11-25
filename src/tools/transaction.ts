@@ -1,12 +1,23 @@
-// Transaction-related tools implementation
-import { PrivateKey } from '@hiveio/dhive';
-import client from '../config/client';
-import config from '../config';
-import { Response } from '../utils/response';
-import { handleError } from '../utils/error';
-import { successJson, errorResponse } from '../utils/response';
+/**
+ * Transaction-related Tools Implementation
+ * 
+ * Summary: Provides tools for broadcasting transactions to the Hive blockchain.
+ * Purpose: Vote on posts and transfer tokens using WAX transaction builder.
+ * Key elements: voteOnPost, sendToken
+ * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error
+ * Last update: Migration from dhive to WAX library with transaction builder pattern
+ */
 
-// Vote on a post
+import { getChain } from '../config/client.js';
+import config from '../config/index.js';
+import { type Response } from '../utils/response.js';
+import { handleError } from '../utils/error.js';
+import { successJson, errorResponse } from '../utils/response.js';
+
+/**
+ * Vote on a post
+ * Broadcasts a vote operation to the Hive blockchain
+ */
 export async function voteOnPost(
   params: { 
     author: string; 
@@ -23,25 +34,34 @@ export async function voteOnPost(
       return errorResponse('Error: HIVE_USERNAME or HIVE_POSTING_KEY environment variables are not set');
     }
 
-    // Create the vote operation
-    const vote = {
-      voter: username,
-      author: params.author,
-      permlink: params.permlink,
-      weight: params.weight,
-    };
-
-    // Create the broadcast instance and broadcast the vote
-    const result = await client.broadcast.vote(
-      vote,
-      PrivateKey.fromString(privateKey)
-    );
+    const chain = await getChain();
+    
+    // Create a new transaction with WAX
+    const tx = await chain.createTransaction();
+    
+    // Push the vote operation using WAX's operation format (with _operation suffix)
+    tx.pushOperation({
+      vote_operation: {
+        voter: username,
+        author: params.author,
+        permlink: params.permlink,
+        weight: params.weight,
+      }
+    });
+    
+    // Sign the transaction with the posting key
+    tx.sign(privateKey);
+    
+    // Broadcast the transaction
+    await chain.broadcast(tx);
+    
+    // Get transaction ID from the signed transaction
+    const txId = tx.id;
 
     return successJson({
       success: true,
-      transaction_id: result.id,
-      transaction_url: `https://www.hiveblockexplorer.com/tx/${result.id}`,
-      block_num: result.block_num,
+      transaction_id: txId,
+      transaction_url: `https://www.hiveblockexplorer.com/tx/${txId}`,
       voter: username,
       author: params.author,
       permlink: params.permlink,
@@ -52,7 +72,10 @@ export async function voteOnPost(
   }
 }
 
-// Send HIVE or HBD to another account
+/**
+ * Send HIVE or HBD to another account
+ * Broadcasts a transfer operation to the Hive blockchain
+ */
 export async function sendToken(
   params: { 
     to: string; 
@@ -70,28 +93,47 @@ export async function sendToken(
       return errorResponse('Error: HIVE_USERNAME or HIVE_ACTIVE_KEY environment variables are not set. Note that transfers require an active key, not a posting key.');
     }
 
-    // Format the amount with 3 decimal places and append the currency
-    const formattedAmount = `${params.amount.toFixed(3)} ${params.currency}`;
+    const chain = await getChain();
+    
+    // Create the asset using WAX helper methods
+    let amountAsset;
+    if (params.currency.toUpperCase() === 'HIVE') {
+      amountAsset = chain.hiveCoins(params.amount);
+    } else if (params.currency.toUpperCase() === 'HBD') {
+      amountAsset = chain.hbdCoins(params.amount);
+    } else {
+      return errorResponse(`Error: Invalid currency: ${params.currency}. Must be HIVE or HBD.`);
+    }
+    
+    // Create a new transaction with WAX
+    const tx = await chain.createTransaction();
+    
+    // Push the transfer operation (with _operation suffix)
+    tx.pushOperation({
+      transfer_operation: {
+        from: username,
+        to: params.to,
+        amount: amountAsset,
+        memo: params.memo || '',
+      }
+    });
+    
+    // Sign the transaction with the active key (required for transfers)
+    tx.sign(activeKey);
+    
+    // Broadcast the transaction
+    await chain.broadcast(tx);
+    
+    // Get transaction ID
+    const txId = tx.id;
 
-    // Create the transfer operation
-    const transfer = {
-      from: username,
-      to: params.to,
-      amount: formattedAmount,
-      memo: params.memo || '',
-    };
-
-    // Broadcast the transfer using active key (required for transfers)
-    const result = await client.broadcast.transfer(
-      transfer,
-      PrivateKey.fromString(activeKey)
-    );
+    // Format the amount string for display
+    const formattedAmount = `${params.amount.toFixed(3)} ${params.currency.toUpperCase()}`;
 
     return successJson({
       success: true,
-      transaction_id: result.id,
-      transaction_url: `https://www.hiveblockexplorer.com/tx/${result.id}`,
-      block_num: result.block_num,
+      transaction_id: txId,
+      transaction_url: `https://www.hiveblockexplorer.com/tx/${txId}`,
       from: username,
       to: params.to,
       amount: formattedAmount,

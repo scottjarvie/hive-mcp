@@ -1,6 +1,6 @@
 // tests/tools/account.test.ts
-import { getAccountInfo, getAccountHistory, getVestingDelegations } from '../../src/tools/account';
-import { canRunAuthenticatedTests, getTestUsername } from '../utils/test-helpers';
+import { getAccountInfo, getAccountHistory, getVestingDelegations } from '../../src/tools/account.js';
+import { canRunAuthenticatedTests, getTestUsername } from '../utils/test-helpers.js';
 
 describe('Account Tools', () => {
   // Skip all tests if we can't run authenticated tests
@@ -105,7 +105,7 @@ describe('Account Tools', () => {
       
       // If there are operations, they should all be transfers
       if (historyData.operations.length > 0) {
-        historyData.operations.forEach((op) => {
+        historyData.operations.forEach((op: { type: string }) => {
           expect(op.type).toBe('transfer');
         });
       }

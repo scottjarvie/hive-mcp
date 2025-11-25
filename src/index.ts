@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 
+/**
+ * Hive MCP Server Entry Point
+ * 
+ * Summary: Main entry point for the Hive MCP server.
+ * Purpose: Initializes and starts the MCP server for AI blockchain interactions.
+ * Key elements: McpServer, StdioServerTransport, registerTools, registerPrompts
+ * Dependencies: @modelcontextprotocol/sdk, config, tools, utils/logger
+ * Last update: Migration to ESM with WAX library
+ */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { registerTools, registerPrompts } from './tools';
-import { validatePrivateKey, getConfig } from './config';
-import logger from './utils/logger';
+import { registerTools, registerPrompts } from './tools/index.js';
+import { validatePrivateKey, getConfig } from './config/index.js';
+import logger from './utils/logger.js';
 
 const startServer = async () => {
   const config = getConfig();

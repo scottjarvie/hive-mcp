@@ -1,6 +1,6 @@
 // Content and posting schemas
 import { z } from 'zod';
-import { tagsSchema, tagQueryCategories, userQueryCategories, beneficiariesSchema } from './common';
+import { tagsSchema, tagQueryCategories, userQueryCategories, beneficiariesSchema } from './common.js';
 
 // Schema for get_post_content tool
 export const getPostContentSchema = z.object({

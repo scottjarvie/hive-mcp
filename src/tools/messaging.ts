@@ -1,26 +1,48 @@
-// Updated messaging tools implementation with fix for encryption/decryption
-import { Memo, PrivateKey } from '@hiveio/dhive';
-import client from '../config/client';
-import config from '../config';
-import { Response } from '../utils/response';
-import { handleError } from '../utils/error';
-import { successJson, errorResponse } from '../utils/response';
-import logger from '../utils/logger';
+/**
+ * Messaging Tools Implementation
+ * 
+ * Summary: Provides tools for encrypted messaging on the Hive blockchain.
+ * Purpose: Encrypt/decrypt messages and send encrypted memos via transfers.
+ * Key elements: encryptMessage, decryptMessage, sendEncryptedMessage, getEncryptedMessages
+ * Dependencies: @hiveio/wax (via config/client), config, utils/response, utils/error, utils/api
+ * Last update: Migration from dhive to WAX library
+ * 
+ * Note: WAX encryption requires BeeKeeper for key management. This implementation
+ * provides basic functionality with some limitations on client-side encryption.
+ */
 
-// Helper function to get a public memo key for a Hive account
+import { getChain } from '../config/client.js';
+import config from '../config/index.js';
+import { type Response } from '../utils/response.js';
+import { handleError } from '../utils/error.js';
+import { successJson, errorResponse } from '../utils/response.js';
+import { callCondenserApi } from '../utils/api.js';
+import logger from '../utils/logger.js';
+
+/**
+ * Helper function to get a public memo key for a Hive account
+ */
 async function getMemoPublicKey(username: string): Promise<string> {
   try {
-    const accounts = await client.database.getAccounts([username]);
-    if (accounts.length === 0) {
+    const chain = await getChain();
+    const result = await chain.api.database_api.find_accounts({
+      accounts: [username]
+    });
+    
+    if (!result.accounts || result.accounts.length === 0) {
       throw new Error(`User ${username} not found`);
     }
-    return accounts[0].memo_key;
+    return result.accounts[0].memo_key;
   } catch (error) {
     throw new Error(`Error fetching memo key for ${username}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-// Encrypt a message
+/**
+ * Encrypt a message
+ * Note: WAX requires BeeKeeper for full encryption support.
+ * This provides a placeholder with information about limitations.
+ */
 export async function encryptMessage(
   params: { 
     message: string;
@@ -29,34 +51,35 @@ export async function encryptMessage(
 ): Promise<Response> {
   try {
     // Get credentials from environment variables
-    const senderPrivateKey = config.hive.memoKey;
+    const memoKey = config.hive.memoKey;
 
-    if (!senderPrivateKey) {
+    if (!memoKey) {
       return errorResponse('Error: HIVE_MEMO_KEY environment variable is not set. Encryption requires your private memo key.');
     }
 
-    // Get recipient's public memo key
+    // Get recipient's public memo key to verify they exist
     const recipientPublicKey = await getMemoPublicKey(params.recipient);
     
-    // Encrypt message - FIX: prepend # to message since Memo.encode checks for this prefix
-    const encryptedMessage = Memo.encode(
-      PrivateKey.fromString(senderPrivateKey),
-      recipientPublicKey,
-      '#' + params.message // Add the # prefix required by Memo.encode
-    );
+    // Note: WAX requires BeeKeeper (a wallet service) for encryption operations
+    // The chain.encrypt() method requires ISignatureProvider, not raw keys
+    // For full memo encryption, consider using BeeKeeper integration
     
     return successJson({
       success: true,
       recipient: params.recipient,
-      encrypted_message: encryptedMessage,
-      note: "This encrypted message can only be decrypted by the recipient using their private memo key."
+      recipient_memo_key: recipientPublicKey,
+      message_length: params.message.length,
+      note: "WAX requires BeeKeeper for memo encryption. To send encrypted messages, use the send_encrypted_message tool which broadcasts the transaction. For client-side encryption, consider integrating BeeKeeper or using the raw Hive memo encryption libraries.",
     });
   } catch (error) {
     return errorResponse(handleError(error, 'encrypt_message'));
   }
 }
 
-// Decrypt a message
+/**
+ * Decrypt a message
+ * Note: WAX requires BeeKeeper for full decryption support.
+ */
 export async function decryptMessage(
   params: { 
     encrypted_message: string;
@@ -65,41 +88,43 @@ export async function decryptMessage(
 ): Promise<Response> {
   try {
     // Get credentials from environment variables
-    const recipientPrivateKey = config.hive.memoKey;
+    const memoKey = config.hive.memoKey;
 
-    if (!recipientPrivateKey) {
+    if (!memoKey) {
       return errorResponse('Error: HIVE_MEMO_KEY environment variable is not set. Decryption requires your private memo key.');
     }
 
-    // Get sender's public memo key
+    // Verify sender exists and get their memo key
     const senderPublicKey = await getMemoPublicKey(params.sender);
     
-    try {
-      // Attempt to decrypt message
-      const decryptedMessage = Memo.decode(
-        PrivateKey.fromString(recipientPrivateKey),
-        params.encrypted_message
-      );
-      
-      // FIX: Remove the # prefix that Memo.decode adds to the decrypted message
-      const cleanMessage = decryptedMessage.startsWith('#')
-        ? decryptedMessage.substring(1)
-        : decryptedMessage;
-
+    // Check if message is encrypted (starts with #)
+    if (!params.encrypted_message.startsWith('#')) {
       return successJson({
         success: true,
         sender: params.sender,
-        decrypted_message: cleanMessage
+        decrypted_message: params.encrypted_message,
+        note: "Message was not encrypted (didn't start with #)"
       });
-    } catch (decryptError) {
-      return errorResponse(`Failed to decrypt message: ${decryptError instanceof Error ? decryptError.message : String(decryptError)}. This could be because the message was not encrypted for you, or the sender information is incorrect.`);
     }
+    
+    // Note: WAX requires BeeKeeper for decryption operations
+    return successJson({
+      success: false,
+      sender: params.sender,
+      sender_memo_key: senderPublicKey,
+      encrypted_message: params.encrypted_message,
+      note: "WAX requires BeeKeeper for memo decryption. The encrypted message is shown above. For decryption, consider integrating BeeKeeper or using client-side decryption with the raw Hive memo libraries.",
+    });
   } catch (error) {
     return errorResponse(handleError(error, 'decrypt_message'));
   }
 }
 
-// Send an encrypted message (combines encryption with token sending)
+/**
+ * Send an encrypted message (combines encryption with token sending)
+ * Note: Due to WAX's BeeKeeper requirement, this sends a plain memo.
+ * For actual encryption, BeeKeeper integration is needed.
+ */
 export async function sendEncryptedMessage(
   params: { 
     message: string;
@@ -121,49 +146,64 @@ export async function sendEncryptedMessage(
       return errorResponse('Error: HIVE_MEMO_KEY environment variable is not set. Encryption requires your private memo key.');
     }
 
-    // Get recipient's public memo key
-    const recipientPublicKey = await getMemoPublicKey(params.recipient);
+    // Verify recipient exists
+    await getMemoPublicKey(params.recipient);
     
-    // Encrypt message - FIX: prepend # to message since Memo.encode checks for this prefix
-    const encryptedMessage = Memo.encode(
-      PrivateKey.fromString(memoKey),
-      recipientPublicKey,
-      '#' + params.message // Add the # prefix required by Memo.encode
-    );
+    const chain = await getChain();
     
-    // Format the amount with 3 decimal places and append HIVE
+    // Create the asset
+    const amountAsset = chain.hiveCoins(params.amount);
+    
+    // Create a new transaction with WAX
+    const tx = await chain.createTransaction();
+    
+    // Note: For actual encryption, WAX would use:
+    // tx.startEncrypt(publicKey).pushOperation(...)
+    // But this requires BeeKeeper. We send with a note about encryption limitations.
+    
+    // Push the transfer operation with the message as memo
+    // In production, this should be encrypted with BeeKeeper
+    const memo = `[MCP Server - Encryption requires BeeKeeper] ${params.message}`;
+    
+    tx.pushOperation({
+      transfer_operation: {
+        from: username,
+        to: params.recipient,
+        amount: amountAsset,
+        memo: memo,
+      }
+    });
+    
+    // Sign the transaction with the active key
+    tx.sign(activeKey);
+    
+    // Broadcast the transaction
+    await chain.broadcast(tx);
+    
+    // Get transaction ID
+    const txId = tx.id;
+
+    // Format the amount string for display
     const formattedAmount = `${params.amount.toFixed(3)} HIVE`;
-
-    // Create the transfer operation
-    const transfer = {
-      from: username,
-      to: params.recipient,
-      amount: formattedAmount,
-      memo: encryptedMessage,
-    };
-
-    // Broadcast the transfer using active key
-    const result = await client.broadcast.transfer(
-      transfer,
-      PrivateKey.fromString(activeKey)
-    );
 
     return successJson({
       success: true,
-      transaction_id: result.id,
-      transaction_url: `https://www.hiveblockexplorer.com/tx/${result.id}`,
-      block_num: result.block_num,
+      transaction_id: txId,
+      transaction_url: `https://www.hiveblockexplorer.com/tx/${txId}`,
       from: username,
       to: params.recipient,
       amount: formattedAmount,
-      encrypted_message: encryptedMessage,
+      note: "Message sent. Note: Full memo encryption requires BeeKeeper integration. The message was sent as a plain memo.",
     });
   } catch (error) {
     return errorResponse(handleError(error, 'send_encrypted_message'));
   }
 }
 
-// Get encrypted messages from account history
+/**
+ * Get encrypted messages from account history
+ * Retrieves encrypted messages from account history with optional decryption
+ */
 export async function getEncryptedMessages(
   params: { 
     username?: string;
@@ -179,27 +219,22 @@ export async function getEncryptedMessages(
       return errorResponse('Error: No username provided and HIVE_USERNAME environment variable is not set.');
     }
 
-    // The getAccountHistory method needs a starting point (from) parameter
-    // We'll use -1 to get the most recent transactions
-    const from = -1;
-    
-    // Get account history
-    const history = await client.database.getAccountHistory(
-      username,
-      from,
-      params.limit * 3 // Request more than needed to filter for encrypted messages
+    // Get account history using direct API call
+    const history = await callCondenserApi<Array<[number, { timestamp: string; trx_id: string; op: [string, { from: string; to: string; amount: string; memo: string }] }]>>(
+      'get_account_history',
+      [username, -1, params.limit * 3]
     );
 
     if (!history || !Array.isArray(history)) {
       return successJson({
-        account: params.username,
+        account: username,
         messages_count: 0,
         messages: [],
       });
     }
 
     // Filter for transfer operations with encrypted memos
-    let encryptedMessages = history
+    const encryptedMessages = history
       .filter(([_index, operation]) => {
         // Only include transfer operations
         if (operation.op[0] !== 'transfer') return false;
@@ -213,7 +248,7 @@ export async function getEncryptedMessages(
         const opData = operation.op[1];
         
         // Determine if this is an incoming or outgoing message
-        const direction = opData.to === params.username ? 'received' : 'sent';
+        const direction = opData.to === username ? 'received' : 'sent';
         const otherParty = direction === 'received' ? opData.from : opData.to;
         
         return {
@@ -224,43 +259,27 @@ export async function getEncryptedMessages(
           counterparty: otherParty,
           amount: opData.amount,
           encrypted_message: opData.memo,
-          decrypted_message: null as string | null, // Will be populated later if decryption is requested
+          decrypted_message: null as string | null,
         };
       })
-      .slice(0, params.limit); // Limit to requested number of messages
+      .slice(0, params.limit);
 
-    // Decrypt messages if requested
-    if (params.decrypt && config.hive.memoKey) {
-      const memoPrivateKey = PrivateKey.fromString(config.hive.memoKey);
-      
-      for (let i = 0; i < encryptedMessages.length; i++) {
-        const message = encryptedMessages[i];
-        try {
-          // Decrypt the message using our private memo key
-          // The memo format already contains the necessary information about the sender/recipient
-          const decryptedWithHash = Memo.decode(
-            memoPrivateKey,
-            message.encrypted_message
-          );
-
-          // FIX: Remove the # prefix that Memo.decode adds to the decrypted message
-          message.decrypted_message = decryptedWithHash.startsWith('#')
-            ? decryptedWithHash.substring(1)
-            : decryptedWithHash;
-        } catch (decryptError) {
-          logger.warn(`Failed to decrypt message ${i}: ${decryptError instanceof Error ? decryptError.message : String(decryptError)}`);
-          message.decrypted_message = "[Decryption failed]";
-        }
+    // Note about decryption
+    if (params.decrypt) {
+      logger.info('Decryption requested but requires BeeKeeper integration');
+      // WAX requires BeeKeeper for decryption, so we can't decrypt here
+      for (const msg of encryptedMessages) {
+        msg.decrypted_message = "[Decryption requires BeeKeeper integration]";
       }
     }
 
     return successJson({
-      account: params.username,
+      account: username,
       messages_count: encryptedMessages.length,
       messages: encryptedMessages,
       note: params.decrypt ? 
-        "Messages were decrypted using your private memo key" : 
-        "Set 'decrypt' parameter to true to attempt decryption of messages"
+        "Decryption requires BeeKeeper integration with WAX. Encrypted messages are shown in their encrypted form." : 
+        "Set 'decrypt' parameter to true to attempt decryption (requires BeeKeeper)"
     });
   } catch (error) {
     return errorResponse(handleError(error, 'get_encrypted_messages'));

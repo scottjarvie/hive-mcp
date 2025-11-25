@@ -1,15 +1,24 @@
-// Export all schemas in the format needed by the McpServer.tool() method
+/**
+ * Schema Index
+ * 
+ * Summary: Exports all schemas in the format needed by McpServer.
+ * Purpose: Central schema export point for tool registration.
+ * Key elements: Schema shape extraction and exports
+ * Dependencies: zod, schema modules
+ * Last update: Migration to ESM
+ */
+
 import { z } from 'zod';
 
 // Import all the schema objects
-import * as accountSchemas from './account';
-import * as contentSchemas from './content';
-import * as transactionSchemas from './transaction';
-import * as cryptoSchemas from './crypto';
-import * as blockchainSchemas from './blockchain';
-import * as messagingSchemas from './messaging';
-import * as promptsSchemas from './prompts';
-export * from './common';
+import * as accountSchemas from './account.js';
+import * as contentSchemas from './content.js';
+import * as transactionSchemas from './transaction.js';
+import * as cryptoSchemas from './crypto.js';
+import * as blockchainSchemas from './blockchain.js';
+import * as messagingSchemas from './messaging.js';
+import * as promptsSchemas from './prompts.js';
+export * from './common.js';
 
 // Helper function to extract the shape from a ZodObject
 function getZodShape<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {

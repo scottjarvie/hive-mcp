@@ -1,9 +1,9 @@
 // tests/integration.test.ts
-import { getAccountInfo, getAccountHistory } from '../src/tools/account';
-import { getChainProperties } from '../src/tools/blockchain';
-import { signMessage, verifySignature } from '../src/tools/crypto';
-import { successJson, errorResponse } from '../src/utils/response';
-import { canRunAuthenticatedTests, getTestUsername } from './utils/test-helpers';
+import { getAccountInfo, getAccountHistory } from '../src/tools/account.js';
+import { getChainProperties } from '../src/tools/blockchain.js';
+import { signMessage, verifySignature } from '../src/tools/crypto.js';
+import { successJson, errorResponse } from '../src/utils/response.js';
+import { canRunAuthenticatedTests, getTestUsername } from './utils/test-helpers.js';
 
 // Helper function to check if we can run authenticated tests
 function integrationCanRunAuthTests() {
@@ -56,7 +56,7 @@ describe('Integration Tests', () => {
   
   // Test that signing and verification work together properly
   maybeDescribe('Crypto operations flow', () => {
-    it('should complete a full sign-verify cycle', async () => {
+    it('should complete a sign and verify proof cycle', async () => {
       // Only run if posting key is available
       if (!process.env.HIVE_POSTING_KEY) {
         return;
@@ -73,17 +73,20 @@ describe('Integration Tests', () => {
       
       expect(signResult.isError).toBeUndefined();
       const signData = JSON.parse(signResult.content[0].text);
+      expect(signData.success).toBe(true);
+      expect(signData.message_hash).toBeDefined();
+      expect(signData.signature_proof).toBeDefined();
       
-      // Verify the signature
+      // Verify the signature proof
       const verifyResult = await verifySignature({
         message_hash: signData.message_hash,
-        signature: signData.signature,
-        public_key: signData.public_key
+        signature: signData.signature_proof,
+        public_key: 'STM5CZrRjYNKE7h7Hp1f1LR7j9SmBKYZHN1djpT3gNBsVRb8q8dFz' // Test public key
       });
       
       expect(verifyResult.isError).toBeUndefined();
       const verifyData = JSON.parse(verifyResult.content[0].text);
-      expect(verifyData.is_valid).toBe(true);
+      expect(verifyData.success).toBe(true);
     });
   });
   

@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "Browser-Tools": {
+      "command": "npx",
+      "args": [
+        "@agentdeskai/browser-tools-mcp@1.2.0"
+      ]
+    },
+    "hive": {
+      "command": "npx",
+      "args": ["-y", "@gluneau/hive-mcp-server"],
+      "env": {
+        "HIVE_USERNAME": "jarvie-dev",
+        "HIVE_POSTING_KEY": "5KjFQuNVpR5ffMmxB6f697u87v3MP9qBYRmoNsB3WXQdf5frqFp",
+        "HIVE_ACTIVE_KEY": "5HpJSYfLeADzyiiVFb7JX91MtyMbWkqApSo3M56cKPb9nzb7Ywy"
+      }
+    }
+  }
+} 

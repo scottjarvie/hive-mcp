@@ -1,15 +1,24 @@
-// Tool registration module
+/**
+ * Tool Registration Module
+ * 
+ * Summary: Registers all MCP tools and prompts with the server.
+ * Purpose: Central registration point for Hive blockchain tools.
+ * Key elements: registerTools, registerPrompts
+ * Dependencies: @modelcontextprotocol/sdk, schemas, tool modules
+ * Last update: Migration to ESM with WAX library
+ */
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import * as schemas from '../schemas';
-import * as accountTools from './account';
-import * as contentTools from './content';
-import * as transactionTools from './transaction';
-import * as contentCreationTools from './content-creation';
-import * as cryptoTools from './crypto';
-import * as blockchainTools from './blockchain';
-import * as messagingTools from './messaging';
-import { adaptHandler } from '../utils/response';
-import * as promptsTools from './prompts';
+import * as schemas from '../schemas/index.js';
+import * as accountTools from './account.js';
+import * as contentTools from './content.js';
+import * as transactionTools from './transaction.js';
+import * as contentCreationTools from './content-creation.js';
+import * as cryptoTools from './crypto.js';
+import * as blockchainTools from './blockchain.js';
+import * as messagingTools from './messaging.js';
+import { adaptHandler } from '../utils/response.js';
+import * as promptsTools from './prompts.js';
 
 export function registerPrompts(server: McpServer): void {
   // Create Post prompt

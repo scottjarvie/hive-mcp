@@ -1,5 +1,12 @@
-// Logging utility for consistent logging
-// Avoids using console.log/console.error as per requirements
+/**
+ * Logging Utility
+ * 
+ * Summary: Logging utility for consistent logging.
+ * Purpose: Provides standardized logging to stderr (avoids console.log).
+ * Key elements: debug, info, warn, error, setLogLevel
+ * Dependencies: None
+ * Last update: Migration to ESM
+ */
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const levels: Record<LogLevel, number> = {

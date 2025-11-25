@@ -1,5 +1,5 @@
 // tests/utils/response.test.ts
-import { successJson, successText, errorResponse } from '../../src/utils/response';
+import { successJson, successText, errorResponse } from '../../src/utils/response.js';
 
 describe('Response Utilities', () => {
   describe('successJson', () => {
@@ -56,7 +56,7 @@ describe('Response Utilities', () => {
       expect(parsedResponse.items.length).toBe(2);
       expect(parsedResponse.metadata.nested.deeply.value).toBe(true);
     });
-});
+  });
 
   
   describe('successText', () => {

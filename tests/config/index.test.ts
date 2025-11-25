@@ -1,29 +1,23 @@
 // tests/config/index.test.ts
-import * as configModule from '../../src/config';
-import { PrivateKey } from '@hiveio/dhive';
+import * as configModule from '../../src/config/index.js';
 
 // Helper function to check if environment variables exist
 const hasEnv = (vars: string[]): boolean => 
   vars.every(varName => !!process.env[varName]);
 
 describe('Configuration Module', () => {
-  const originalEnv = process.env;
+  const originalEnv = { ...process.env };
 
   // Save original environment variables and restore them after tests
   beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...originalEnv };
     // Refresh the config with the current environment
     configModule.refreshEnvConfig();
   });
 
-  afterEach(() => {
-    // Restore any mocks
-    jest.restoreAllMocks();
-  });
-
   afterAll(() => {
+    // Restore original env
     process.env = originalEnv;
+    configModule.refreshEnvConfig();
   });
 
   describe('Configuration Structure', () => {
@@ -71,12 +65,20 @@ describe('Configuration Module', () => {
       expect(configModule.validatePrivateKey('invalid-key')).toBe(false);
       expect(configModule.validatePrivateKey('12345')).toBe(false);
       expect(configModule.validatePrivateKey('NOT_A_VALID_KEY')).toBe(false);
+      // Key not starting with 5
+      expect(configModule.validatePrivateKey('4WIF_KEY_INVALID_START')).toBe(false);
     });
     
-    // Only run this test if TEST_PRIVATE_KEY is available
-    (process.env.TEST_PRIVATE_KEY ? it : it.skip)('should validate correctly formatted WIF private key', () => {
-      const testKey = process.env.TEST_PRIVATE_KEY;
+    it('should validate correctly formatted WIF private keys', () => {
+      // A valid WIF private key starts with '5' and is 51-52 characters of base58
+      // Using a test key format that matches the validation rules
+      const testKey = '5JdeC9P7Pbd1uGdFVEsJ41EkEnADbbHGq6p1BwFxm6txNBsQnsw';
       expect(configModule.validatePrivateKey(testKey)).toBe(true);
+    });
+    
+    it('should reject keys with invalid characters', () => {
+      // Base58 doesn't include 0, O, I, l
+      expect(configModule.validatePrivateKey('5JdeC9P7Pbd1uGdFVEsJ41EkEnADbbHGq6p1BwFxm6txNBsQn0O')).toBe(false);
     });
   });
   

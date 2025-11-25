@@ -1,4 +1,12 @@
-// Error handling utilities
+/**
+ * Error Handling Utilities
+ * 
+ * Summary: Utilities for consistent error handling.
+ * Purpose: Provides standardized error message formatting.
+ * Key elements: handleError
+ * Dependencies: None
+ * Last update: Migration to ESM
+ */
 
 // Handle errors consistently
 export function handleError(error: unknown, context: string): string {

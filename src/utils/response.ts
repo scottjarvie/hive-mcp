@@ -1,5 +1,14 @@
-// Utilities for formatting consistent responses
-import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol';
+/**
+ * Response Utilities
+ * 
+ * Summary: Utilities for formatting consistent MCP responses.
+ * Purpose: Provides standardized response formats for tools.
+ * Key elements: successJson, successText, errorResponse, adaptHandler
+ * Dependencies: @modelcontextprotocol/sdk
+ * Last update: Migration to ESM
+ */
+
+import { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 // Update the Response interface to include index signature
 export interface SuccessResponse {
@@ -66,7 +75,7 @@ export function errorResponse(message: string): Response {
 export function adaptHandler<T>(
   handler: (params: T) => Promise<Response>
 ): (params: T, extra: RequestHandlerExtra) => Promise<Response> {
-  return async (params: T, extra: RequestHandlerExtra): Promise<Response> => {
+  return async (params: T, _extra: RequestHandlerExtra): Promise<Response> => {
     return await handler(params);
   };
 }

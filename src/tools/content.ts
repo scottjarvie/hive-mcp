@@ -1,22 +1,69 @@
-// Content retrieval tools implementation
-import client from '../config/client';
-import { Response } from '../utils/response';
-import { handleError } from '../utils/error';
-import { successJson, errorResponse } from '../utils/response';
-import { DiscussionQueryCategory } from '@hiveio/dhive';
+/**
+ * Content Retrieval Tools Implementation
+ * 
+ * Summary: Provides tools for fetching Hive posts and content.
+ * Purpose: Read-only content retrieval from the Hive blockchain.
+ * Key elements: getPostContent, getPostsByTag, getPostsByUser
+ * Dependencies: utils/response, utils/error, utils/api
+ * Last update: Migration from dhive to WAX library
+ */
 
-// Get a specific post by author and permlink
+import { type Response } from '../utils/response.js';
+import { handleError } from '../utils/error.js';
+import { successJson, errorResponse } from '../utils/response.js';
+import { callCondenserApi } from '../utils/api.js';
+
+// Post interface for formatted posts
+interface FormattedPost {
+  title: string;
+  author: string;
+  permlink: string;
+  created: string;
+  votes: number;
+  payout: string;
+  url: string;
+}
+
+// Raw post from API
+interface RawPost {
+  title: string;
+  author: string;
+  permlink: string;
+  created: string;
+  net_votes: number;
+  pending_payout_value: string;
+  body?: string;
+  last_update?: string;
+  category?: string;
+  json_metadata?: string;
+}
+
+/**
+ * Get a specific post by author and permlink
+ */
 export async function getPostContent(
   params: { author: string; permlink: string }
 ): Promise<Response> {
   try {
-    const content = await client.database.call('get_content', [
-      params.author,
-      params.permlink,
-    ]);
+    // Use direct API call for content
+    const content = await callCondenserApi<RawPost>(
+      'get_content',
+      [params.author, params.permlink]
+    );
     
-    if (!content.author) {
+    if (!content || !content.author) {
       return errorResponse(`Error: Post not found: ${params.author}/${params.permlink}`);
+    }
+    
+    // Parse tags from json_metadata
+    let tags: string[] = [];
+    try {
+      if (content.json_metadata) {
+        const metadata = JSON.parse(content.json_metadata);
+        tags = metadata.tags || [];
+      }
+    } catch {
+      // Ignore JSON parse errors for metadata
     }
     
     return successJson({
@@ -26,7 +73,7 @@ export async function getPostContent(
       created: content.created,
       last_update: content.last_update,
       category: content.category,
-      tags: content.json_metadata ? JSON.parse(content.json_metadata).tags || [] : [],
+      tags,
       url: `https://hive.blog/@${params.author}/${params.permlink}`,
     });
   } catch (error) {
@@ -34,7 +81,10 @@ export async function getPostContent(
   }
 }
 
-// Get posts by tag
+/**
+ * Get posts by tag
+ * Retrieves Hive posts filtered by a specific tag and sorted by a category
+ */
 export async function getPostsByTag(
   params: { 
     category: string; 
@@ -43,15 +93,27 @@ export async function getPostsByTag(
   }
 ): Promise<Response> {
   try {
-    const posts = await client.database.getDiscussions(
-      params.category as DiscussionQueryCategory, 
-      {
-        tag: params.tag,
-        limit: params.limit,
-      }
-    );
+    // Map category to the appropriate condenser API method
+    const methodMap: Record<string, string> = {
+      trending: 'get_discussions_by_trending',
+      hot: 'get_discussions_by_hot',
+      created: 'get_discussions_by_created',
+      active: 'get_discussions_by_active',
+      promoted: 'get_discussions_by_promoted',
+      votes: 'get_discussions_by_votes',
+      children: 'get_discussions_by_children',
+      cashout: 'get_discussions_by_cashout',
+      comments: 'get_discussions_by_comments',
+    };
+    
+    const method = methodMap[params.category] || 'get_discussions_by_trending';
+    
+    const posts = await callCondenserApi<RawPost[]>(method, [{
+      tag: params.tag,
+      limit: params.limit,
+    }]);
 
-    const formattedPosts = posts.map((post) => ({
+    const formattedPosts: FormattedPost[] = posts.map((post) => ({
       title: post.title,
       author: post.author,
       permlink: post.permlink,
@@ -67,7 +129,10 @@ export async function getPostsByTag(
   }
 }
 
-// Get posts by user
+/**
+ * Get posts by user
+ * Retrieves posts authored by or in the feed of a specific Hive user
+ */
 export async function getPostsByUser(
   params: { 
     category: string; 
@@ -77,15 +142,19 @@ export async function getPostsByUser(
 ): Promise<Response> {
   try {
     // For blog and feed queries, the username is provided as the tag parameter
-    const posts = await client.database.getDiscussions(
-      params.category as DiscussionQueryCategory, 
-      {
-        tag: params.username,
-        limit: params.limit,
-      }
-    );
+    const methodMap: Record<string, string> = {
+      blog: 'get_discussions_by_blog',
+      feed: 'get_discussions_by_feed',
+    };
+    
+    const method = methodMap[params.category] || 'get_discussions_by_blog';
+    
+    const posts = await callCondenserApi<RawPost[]>(method, [{
+      tag: params.username,
+      limit: params.limit,
+    }]);
 
-    const formattedPosts = posts.map((post) => ({
+    const formattedPosts: FormattedPost[] = posts.map((post) => ({
       title: post.title,
       author: post.author,
       permlink: post.permlink,

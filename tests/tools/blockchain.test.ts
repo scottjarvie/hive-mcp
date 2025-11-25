@@ -1,5 +1,5 @@
 // tests/tools/blockchain.test.ts
-import { getChainProperties } from '../../src/tools/blockchain';
+import { getChainProperties } from '../../src/tools/blockchain.js';
 
 describe('Blockchain Tools', () => {
   describe('getChainProperties', () => {
