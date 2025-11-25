@@ -11,9 +11,6 @@
 import { getRcAccounts, delegateRc } from '../../src/tools/resource-credits.js';
 import { canRunAuthenticatedTests, getTestUsername } from '../utils/test-helpers.js';
 
-// Increase timeout for API-heavy tests
-jest.setTimeout(60000);
-
 describe('Resource Credits Tools', () => {
   const testUsername = getTestUsername();
 

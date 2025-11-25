@@ -25,6 +25,10 @@ import * as stakingTools from './staking.js';
 import * as rewardsTools from './rewards.js';
 import * as savingsTools from './savings.js';
 import * as conversionsTools from './conversions.js';
+import * as heTokenTools from './hive-engine-tokens.js';
+import * as heMarketTools from './hive-engine-market.js';
+import * as heNftTools from './hive-engine-nfts.js';
+import * as hePoolTools from './hive-engine-pools.js';
 import { adaptHandler } from '../utils/response.js';
 import * as promptsTools from './prompts.js';
 
@@ -451,5 +455,216 @@ export function registerTools(server: McpServer): void {
     'Get current HBD/HIVE median price feed from witnesses',
     schemas.getCurrentPriceFeedSchema,
     adaptHandler(conversionsTools.getCurrentPriceFeed)
+  );
+
+  // =========================================================================
+  // Hive Engine Tools (Phase 5)
+  // =========================================================================
+
+  // HE Token tools
+  server.tool(
+    'get_he_token_balance',
+    'Get Hive Engine token balance(s) for an account',
+    schemas.getHETokenBalanceSchema,
+    adaptHandler(heTokenTools.getHETokenBalance)
+  );
+
+  server.tool(
+    'get_he_token_info',
+    'Get details about a Hive Engine token (supply, precision, issuer, etc.)',
+    schemas.getHETokenInfoSchema,
+    adaptHandler(heTokenTools.getHETokenInfo)
+  );
+
+  server.tool(
+    'get_he_tokens_list',
+    'List Hive Engine tokens with optional filtering',
+    schemas.getHETokensListSchema,
+    adaptHandler(heTokenTools.getHETokensList)
+  );
+
+  server.tool(
+    'transfer_he_token',
+    'Transfer Hive Engine tokens to another account',
+    schemas.transferHETokenSchema,
+    adaptHandler(heTokenTools.transferHEToken)
+  );
+
+  server.tool(
+    'stake_he_token',
+    'Stake Hive Engine tokens for voting/governance power',
+    schemas.stakeHETokenSchema,
+    adaptHandler(heTokenTools.stakeHEToken)
+  );
+
+  server.tool(
+    'unstake_he_token',
+    'Begin unstaking Hive Engine tokens (cooldown period applies)',
+    schemas.unstakeHETokenSchema,
+    adaptHandler(heTokenTools.unstakeHEToken)
+  );
+
+  server.tool(
+    'delegate_he_token',
+    'Delegate staked Hive Engine tokens to another account',
+    schemas.delegateHETokenSchema,
+    adaptHandler(heTokenTools.delegateHEToken)
+  );
+
+  server.tool(
+    'undelegate_he_token',
+    'Undelegate Hive Engine tokens (cooldown period applies)',
+    schemas.undelegateHETokenSchema,
+    adaptHandler(heTokenTools.undelegateHEToken)
+  );
+
+  // HE Market tools
+  server.tool(
+    'get_he_market_orderbook',
+    'Get buy/sell orderbook for a Hive Engine token',
+    schemas.getHEMarketOrderbookSchema,
+    adaptHandler(heMarketTools.getHEMarketOrderbook)
+  );
+
+  server.tool(
+    'get_he_market_history',
+    'Get recent trade history for a Hive Engine token',
+    schemas.getHEMarketHistorySchema,
+    adaptHandler(heMarketTools.getHEMarketHistory)
+  );
+
+  server.tool(
+    'get_he_market_metrics',
+    'Get market metrics (price, volume, etc.) for a Hive Engine token',
+    schemas.getHEMarketMetricsSchema,
+    adaptHandler(heMarketTools.getHEMarketMetrics)
+  );
+
+  server.tool(
+    'get_he_open_orders',
+    'Get open buy/sell orders for an account',
+    schemas.getHEOpenOrdersSchema,
+    adaptHandler(heMarketTools.getHEOpenOrders)
+  );
+
+  server.tool(
+    'place_he_buy_order',
+    'Place a buy order on the Hive Engine market',
+    schemas.placeHEBuyOrderSchema,
+    adaptHandler(heMarketTools.placeHEBuyOrder)
+  );
+
+  server.tool(
+    'place_he_sell_order',
+    'Place a sell order on the Hive Engine market',
+    schemas.placeHESellOrderSchema,
+    adaptHandler(heMarketTools.placeHESellOrder)
+  );
+
+  server.tool(
+    'cancel_he_order',
+    'Cancel an open order on the Hive Engine market',
+    schemas.cancelHEOrderSchema,
+    adaptHandler(heMarketTools.cancelHEOrder)
+  );
+
+  // HE NFT tools
+  server.tool(
+    'get_he_nft_collection',
+    'Get NFTs owned by a Hive account',
+    schemas.getHENFTCollectionSchema,
+    adaptHandler(heNftTools.getHENFTCollection)
+  );
+
+  server.tool(
+    'get_he_nft_info',
+    'Get details about a Hive Engine NFT or NFT collection',
+    schemas.getHENFTInfoSchema,
+    adaptHandler(heNftTools.getHENFTInfo)
+  );
+
+  server.tool(
+    'get_he_nft_properties',
+    'Get NFT collection property schema/definition',
+    schemas.getHENFTPropertiesSchema,
+    adaptHandler(heNftTools.getHENFTProperties)
+  );
+
+  server.tool(
+    'get_he_nft_sell_orders',
+    'Get NFTs listed for sale on the market',
+    schemas.getHENFTSellOrdersSchema,
+    adaptHandler(heNftTools.getHENFTSellOrders)
+  );
+
+  server.tool(
+    'transfer_he_nft',
+    'Transfer Hive Engine NFTs to another account',
+    schemas.transferHENFTSchema,
+    adaptHandler(heNftTools.transferHENFT)
+  );
+
+  server.tool(
+    'sell_he_nft',
+    'List Hive Engine NFTs for sale on the market',
+    schemas.sellHENFTSchema,
+    adaptHandler(heNftTools.sellHENFT)
+  );
+
+  server.tool(
+    'cancel_he_nft_sale',
+    'Cancel NFT sale listings',
+    schemas.cancelHENFTSaleSchema,
+    adaptHandler(heNftTools.cancelHENFTSale)
+  );
+
+  server.tool(
+    'buy_he_nft',
+    'Purchase NFTs from the Hive Engine market',
+    schemas.buyHENFTSchema,
+    adaptHandler(heNftTools.buyHENFT)
+  );
+
+  // HE Pool tools (Diesel Pools)
+  server.tool(
+    'get_he_pool_info',
+    'Get details about a Hive Engine liquidity pool',
+    schemas.getHEPoolInfoSchema,
+    adaptHandler(hePoolTools.getHEPoolInfo)
+  );
+
+  server.tool(
+    'get_he_pools_list',
+    'List all Hive Engine liquidity pools',
+    schemas.getHEPoolsListSchema,
+    adaptHandler(hePoolTools.getHEPoolsList)
+  );
+
+  server.tool(
+    'estimate_he_swap',
+    'Estimate output for a Hive Engine pool swap',
+    schemas.estimateHESwapSchema,
+    adaptHandler(hePoolTools.estimateHESwap)
+  );
+
+  server.tool(
+    'swap_he_tokens',
+    'Swap tokens via Hive Engine liquidity pool (DEX)',
+    schemas.swapHETokensSchema,
+    adaptHandler(hePoolTools.swapHETokens)
+  );
+
+  server.tool(
+    'add_he_liquidity',
+    'Add liquidity to a Hive Engine pool',
+    schemas.addHELiquiditySchema,
+    adaptHandler(hePoolTools.addHELiquidity)
+  );
+
+  server.tool(
+    'remove_he_liquidity',
+    'Remove liquidity from a Hive Engine pool',
+    schemas.removeHELiquiditySchema,
+    adaptHandler(hePoolTools.removeHELiquidity)
   );
 }
