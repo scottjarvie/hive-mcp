@@ -1,82 +1,31 @@
-# Contributing to Hive MCP Server
+# Contributing to Hive MCP
 
-Thank you for your interest in contributing to the Hive MCP Server! This document provides guidelines and instructions for contributing to this project.
+Thanks for helping improve the Hive MCP server. This project now runs on the modern `@hiveio/wax` client and a consolidated set of ~22 action-based tools, so contributions should follow the current architecture and naming.
 
-## Code of Conduct
+## Quick Start
 
-Please be respectful and considerate of others when contributing to this project. We strive to maintain a welcoming and inclusive environment for everyone.
-
-## Getting Started
-
-1. Fork the repository on GitHub
-2. Clone your fork locally
-3. Install dependencies with `npm install`
-4. Create a new branch for your changes
-5. Make your changes
-6. Test your changes using the MCP Inspector (`npm run inspector`)
-7. Commit and push your changes to your fork
-8. Submit a pull request
+1. Fork and clone your copy of the repo.
+2. Install dependencies: `npm ci`
+3. Build once before running the inspector: `npm run build`
+4. Exercise your changes with the MCP Inspector: `npm run inspector`
+5. Run tests: `npm test` (or a focused target like `npm run test:account`)
+6. Open a PR from a feature branch with a clear description of the behavior change.
 
 ## Development Guidelines
 
-### Coding Standards
+- **TypeScript + WAX first**: All blockchain interactions should go through `@hiveio/wax` helpers in `src/utils/api.ts` / `src/utils/hive-engine-api.ts`. Avoid reintroducing legacy `dhive` patterns.
+- **Consolidated tools**: Prefer adding actions to existing consolidated tools before creating new standalone ones, and update the corresponding Zod schemas in `src/schemas`.
+- **Validation & errors**: Every tool input is validated with Zod; use `adaptHandler` helpers and return friendly, actionable error messages.
+- **Docs & naming**: Keep tool/action names consistent with `src/tools/index.ts` and update docs (e.g., `docs/TOOLS.md`, `README.md`) when behavior changes.
+- **Security**: Never commit keys. Authenticated flows rely on `HIVE_POSTING_KEY`/`HIVE_ACTIVE_KEY` environment variables; validate keys with the provided helpers.
 
-- Use TypeScript for all new code
-- Follow the existing code style in the repository
-- Use meaningful variable and function names
-- Add comments for complex logic
+## Pull Requests
 
-### MCP Best Practices
-
-- Follow the [Model Context Protocol specification](https://modelcontextprotocol.io/docs/concepts/architecture)
-- Use appropriate error handling in all tools and resources
-- Include proper input validation using Zod schemas
-- Provide clear and helpful error messages
-
-### Testing
-
-- Test all new features manually using the MCP Inspector
-- Ensure your changes don't break existing functionality
-
-### Pull Requests
-
-- Keep pull requests focused on a single change
-- Provide a clear description of the changes and their purpose
-- Reference any related issues
-- Update documentation as needed
-
-### Commit Messages
-
-Follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
-
-```
-feat: add new tool for finding posts by keyword
-fix: correct error handling in account history tool
-docs: update README with new examples
-test: add tests for voting functionality
-```
-
-## Adding New Features
-
-### New Tools
-
-When adding a new tool:
-
-1. Define a descriptive name and purpose
-2. Create a Zod schema for input validation
-3. Implement the core functionality
-4. Handle errors appropriately
-5. Update documentation to reflect the new tool
-
-### New Resources
-
-When adding a new resource:
-
-1. Define a clear URI template
-2. Implement the resource handler
-3. Ensure proper error handling
-4. Document the new resource in the README
+- Keep scope tight and explain user-facing impact.
+- Note any new env vars or required config.
+- Include tests or manual steps that verify the change (inspector commands are fine).
+- Follow Conventional Commit styling for commit messages when possible (e.g., `feat: add vote weight validation`).
 
 ## License
 
-By contributing to this project, you agree that your contributions will be licensed under the project's ISC license.
+By contributing, you agree your contributions are licensed under the ISC license.

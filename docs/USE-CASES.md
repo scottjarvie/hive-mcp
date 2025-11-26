@@ -274,37 +274,37 @@ These are **read-only operations** that anyone can perform without authenticatio
 #### 1.3.1 Get followers list
 
 - **Prompt:** "Who follows @jarvie on Hive?"
-- **Val:** 7.5 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two calls: `social_info` (get_followers) + `social_info` (get_follow_count). Returns paginated followers (100 default, 1000 max) alphabetically with total count (3,480). Clean data structure.
+- **Recommendation:** Keep
 
 #### 1.3.2 Follower count
 
 - **Prompt:** "How many followers does @blocktrades have?"
-- **Val:** 9.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `social_info` (get_follow_count). Returns follower_count (30,903) and following_count (47). Perfect single-call response, small payload.
+- **Recommendation:** Keep
 
 #### 1.3.3 Get following list
 
 - **Prompt:** "Who does @jarvie follow?"
-- **Val:** 7.5 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `social_info` (get_following). Returns 100 accounts (194 total) alphabetically including notable accounts: acidyo, blocktrades, good-karma, gtg, hiveio.
+- **Recommendation:** Keep
 
 #### 1.3.4 Check mute list
 
 - **Prompt:** "Who has @jarvie muted?"
-- **Val:** 4.0 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 4.0 | **Exp:** 7.5 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `social_info` (get_following with type: 'ignore'). Returns 24 muted accounts. Works perfectly using the type parameter to switch between blog/ignore lists.
+- **Recommendation:** Keep
 
 #### 1.3.5 Analyze social graph ⭐
 
 - **Prompt:** "What's the follower overlap between @jarvie and @yozen?"
-- **Val:** 7.5 | **Exp:** 3.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** Complex operation requiring multiple calls
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 3.5 | **Res:** 7.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two calls to `social_info` (get_followers for each account). Found 16+ common followers (~15% of yozen's). Requires AI to compute intersection, no built-in overlap analysis.
+- **Recommendation:** Enhance (consider adding dedicated social graph analysis tool for overlap/mutual follows)
 
 ---
 
@@ -313,37 +313,37 @@ These are **read-only operations** that anyone can perform without authenticatio
 #### 1.4.1 List communities
 
 - **Prompt:** "List all Hive communities about photography"
-- **Val:** 7.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 7.5 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `community_info` (action: list_communities, query: "photography") returned 20 relevant communities with subscribers, active authors, descriptions. Excellent data quality and relevance filtering. Top result: Photography Lovers (25,402 subscribers).
+- **Recommendation:** Keep
 
 #### 1.4.2 Community details
 
 - **Prompt:** "Tell me about the hive-167922 community"
-- **Val:** 7.5 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `community_info` (action: get_community) returned comprehensive data: title (LeoFinance), description, 26,305 subscribers, 646 active authors, team roster, posting guidelines (flag_text), and creation date. Excellent data completeness.
+- **Recommendation:** Keep
 
 #### 1.4.3 Community subscribers
 
 - **Prompt:** "Who are the top subscribers in the photography community?"
-- **Val:** 5.5 | **Exp:** 5.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 5.5 | **Exp:** 5.5 | **Res:** 5.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two-step workflow: 1) `community_info` (list_communities) to find photography community (identified Photography Lovers - hive-194913), 2) `community_membership` (get_subscribers). API returned 502 Bad Gateway errors on subscriber list endpoint across multiple attempts. Workflow logic is correct but Hivemind API reliability issues prevented complete answer.
+- **Recommendation:** Error Handling - API node reliability; MCP logic correct but depends on Hivemind availability
 
 #### 1.4.4 Find active communities ⭐
 
 - **Prompt:** "What are the most active communities by posts this week?"
-- **Val:** 9.0 | **Exp:** 3.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** Needs analytics not currently available
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 3.5 | **Res:** 5.5 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Called `community_info` (list_communities, sort: rank). API doesn't support time-range filtering for activity. No "posts this week" data available. Returned `num_authors` as proxy for activity. Top by authors: LeoFinance (646), Actifit (463), Worldmappin (315). AI correctly identified limitations and provided best available alternative.
+- **Recommendation:** Enhance - Add sort by `num_pending` or recent post activity; consider time-range filtering for community analytics
 
 #### 1.4.5 Community rules
 
 - **Prompt:** "What are the posting rules for community hive-167922?"
-- **Val:** 5.5 | **Exp:** 6.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 5.5 | **Exp:** 6.0 | **Res:** 8.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `community_info` (get_community) returns posting rules via `flag_text` field. LeoFinance rules: content must relate to financial space (crypto, equities), posts from leofinance.io eligible for @leo.voter upvotes, can earn both LEO and HIVE rewards. Data structure works well when communities populate this field.
+- **Recommendation:** Keep
 
 ---
 
@@ -377,6 +377,27 @@ These are **read-only operations** that anyone can perform without authenticatio
 - **Observations:** May not be supported by current MCP
 - **Recommendation:** \_
 
+#### 1.5.5 DHF Proposals ⭐
+
+- **Prompt:** "What are the top 3 voted DHF proposals and what are they about?"
+- **Val:** 8.0 | **Exp:** 3.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
+- **Observations:** \_
+- **Recommendation:** \_
+
+#### 1.5.6 Internal market orderbook ⭐
+
+- **Prompt:** "What does the HIVE/HBD internal market orderbook look like?"
+- **Val:** 8.0 | **Exp:** 4.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
+- **Observations:** \_
+- **Recommendation:** \_
+
+#### 1.5.7 HBD interest and account costs
+
+- **Prompt:** "What's the current HBD savings interest rate? And how much does it cost to create a new account?"
+- **Val:** 7.5 | **Exp:** 7.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
+- **Observations:** \_
+- **Recommendation:** \_
+
 ---
 
 ## 2. Hive Layer 1 (Keys Required)
@@ -387,7 +408,7 @@ These operations require private keys. **Test Account: `jarvie-dev` only**
 
 #### 2.1.1 Create blog post ⭐
 
-- **Prompt:** "Create a new post on Hive about AI technology"
+- **Prompt:** "Create and post a new post on Hive about PeakD and it's benefits. make sure to also indicate it's a test post testing MCP control."
 - **Key:** Posting
 - **Val:** 9.5 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** \_
@@ -395,7 +416,7 @@ These operations require private keys. **Test Account: `jarvie-dev` only**
 
 #### 2.1.2 Create comment
 
-- **Prompt:** "Reply to @jarvie's latest post with 'Great work!'"
+- **Prompt:** "Reply to a @jarvie post with 'Great work!'"
 - **Key:** Posting
 - **Val:** 9.0 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** \_
@@ -403,7 +424,7 @@ These operations require private keys. **Test Account: `jarvie-dev` only**
 
 #### 2.1.3 Update post
 
-- **Prompt:** "Update my post 'test-post' with new content"
+- **Prompt:** "Update one of my posts at the end with the words 'test-update' and a little poem"
 - **Key:** Posting
 - **Val:** 7.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** \_
@@ -411,7 +432,7 @@ These operations require private keys. **Test Account: `jarvie-dev` only**
 
 #### 2.1.4 Delete post
 
-- **Prompt:** "Delete my post with permlink 'test-post'"
+- **Prompt:** "Create a comment then wait and then delete the comment'"
 - **Key:** Posting
 - **Val:** 6.0 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** \_
@@ -419,27 +440,19 @@ These operations require private keys. **Test Account: `jarvie-dev` only**
 
 #### 2.1.5 Post with beneficiaries ⭐
 
-- **Prompt:** "Create a post with 10% beneficiary to @hivebuzz"
+- **Prompt:** "Create a comment with 10% beneficiary to @peakd and comment on a @peakd post"
 - **Key:** Posting
 - **Val:** 9.0 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** \_
 - **Recommendation:** \_
 
-#### 2.1.6 AI-generated content ⭐
-
-- **Prompt:** "Write and post a tutorial about Python on Hive"
-- **Key:** Posting
-- **Val:** 9.5 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** High-value AI use case
-- **Recommendation:** \_
-
 #### 2.1.7 Schedule-style posting
 
-- **Prompt:** "Draft a post about topic X, then I'll tell you when to post"
+- **Prompt:** "Draft a post about topic MCP servers, then schedule it to be posted in 5 minutes from now"
 - **Key:** Posting
 - **Val:** 7.5 | **Exp:** 6.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
 - **Observations:** Requires conversation context
-- **Recommendation:** \_
+- **Recommendation:** \
 
 ---
 
@@ -1258,12 +1271,12 @@ These are complex use cases combining multiple operations.
 
 | Section              | Total   | Tested | Avg Result |
 | -------------------- | ------- | ------ | ---------- |
-| 1. Hive L1 (No Keys) | 32      | 18     | 8.4        |
+| 1. Hive L1 (No Keys) | 35      | 28     | 8.2        |
 | 2. Hive L1 (Keys)    | 34      | 0      | -          |
 | 3. HE L2 (No Keys)   | 19      | 0      | -          |
 | 4. HE L2 (Keys)      | 16      | 0      | -          |
 | 5. Advanced          | 21      | 0      | -          |
-| **Total**            | **122** | **18** | **8.4**    |
+| **Total**            | **125** | **28** | **8.2**    |
 
 ---
 
@@ -1271,10 +1284,11 @@ These are complex use cases combining multiple operations.
 
 Track suggestions for improving the MCP based on testing:
 
-| ID    | Category | Description | Priority | Status |
-| ----- | -------- | ----------- | -------- | ------ |
-| E-001 |          |             |          |        |
-| E-002 |          |             |          |        |
+| ID    | Category  | Description                                                                           | Priority | Status |
+| ----- | --------- | ------------------------------------------------------------------------------------- | -------- | ------ |
+| E-001 | Community | Add sort by `num_pending` for community listing to show most active by posts          | Medium   | Open   |
+| E-002 | Community | Add time-range filtering for community activity analytics (e.g., posts this week)     | Medium   | Open   |
+| E-003 | API       | Improve error handling and node fallback for `list_subscribers` endpoint (502 errors) | High     | Open   |
 
 ---
 
@@ -1319,5 +1333,5 @@ Tester: [name]
 
 ---
 
-_Last Updated: November 25, 2025_
-_Document Version: 3.2 - Completed section 1.2 testing (9 tests)_
+_Last Updated: November 26, 2025_
+_Document Version: 3.5 - Added 3 new tests to section 1.5 (DHF proposals, internal market, HBD interest/account costs), total 125 use cases_

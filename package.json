@@ -21,7 +21,7 @@
   },
   "author": "jarvie@peakd.com",
   "license": "ISC",
-  "description": "An MCP server that enables AI assistants to interact with the Hive blockchain - 84 tools for accounts, content, social, DeFi, and Hive Engine",
+  "description": "MCP server for Hive/Hive Engine built on @hiveio/wax with 22 consolidated tools for content, social, DeFi, RC, and Hive Engine",
   "dependencies": {
     "@hiveio/wax": "^1.27.6-rc1",
     "@modelcontextprotocol/sdk": "^1.6.1",
