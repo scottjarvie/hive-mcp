@@ -5,7 +5,7 @@
  * Purpose: Read-only advanced content retrieval from the Hive blockchain.
  * Key elements: contentEngagement (consolidated dispatcher)
  * Dependencies: utils/response, utils/error, utils/api, utils/date, transaction.js, social.js
- * Last update: Added date formatting for improved readability
+ * Last update: Added username support for latest post resolution, vote sorting/pagination
  */
 
 import { type Response } from '../utils/response.js';
@@ -17,50 +17,134 @@ import { voteOnPost } from './transaction.js';
 import { reblogPost } from './social.js';
 
 // =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+// Interface for Bridge API post (minimal fields needed for resolution)
+interface BridgePostMinimal {
+  author: string;
+  permlink: string;
+  title: string;
+}
+
+/**
+ * Resolve a username to their latest post's author and permlink
+ * Used to allow engagement queries by username instead of requiring author/permlink
+ */
+async function resolveLatestPost(username: string): Promise<{ 
+  success: boolean; 
+  author?: string; 
+  permlink?: string;
+  title?: string;
+  error?: string;
+}> {
+  try {
+    const posts = await callBridgeApi<BridgePostMinimal[]>('get_account_posts', {
+      account: username,
+      sort: 'posts',  // Only authored posts, not reblogs
+      limit: 1,
+    });
+    
+    if (posts && Array.isArray(posts) && posts.length > 0) {
+      return { 
+        success: true, 
+        author: posts[0].author, 
+        permlink: posts[0].permlink,
+        title: posts[0].title,
+      };
+    }
+    return { success: false, error: `No posts found for user @${username}` };
+  } catch (error) {
+    return { success: false, error: `Failed to fetch latest post for @${username}` };
+  }
+}
+
+// =============================================================================
 // CONSOLIDATED DISPATCHER
 // =============================================================================
 
 /**
  * Consolidated dispatcher for content engagement operations
  * Handles: vote, reblog, get_replies, get_votes, get_reblogged_by
+ * 
+ * Supports two modes for post identification:
+ * 1. author + permlink: Target a specific post
+ * 2. username: Automatically resolve to the user's latest post
  */
 export async function contentEngagement(
   params: {
     action: 'vote' | 'reblog' | 'get_replies' | 'get_votes' | 'get_reblogged_by';
-    author: string;
-    permlink: string;
+    author?: string;
+    permlink?: string;
+    username?: string;  // Alternative: resolve to user's latest post
     weight?: number;
+    // Pagination/sorting for get_votes
+    limit?: number;
+    offset?: number;
+    sort?: 'size' | 'time' | 'voter';
   }
 ): Promise<Response> {
+  // Resolve post identification: either use author/permlink or resolve from username
+  let author = params.author;
+  let permlink = params.permlink;
+  let resolvedFromUsername = false;
+  let postTitle: string | undefined;
+
+  if (params.username && (!author || !permlink)) {
+    // Resolve username to their latest post
+    const resolved = await resolveLatestPost(params.username);
+    if (!resolved.success) {
+      return errorResponse(`Error: ${resolved.error}`);
+    }
+    author = resolved.author;
+    permlink = resolved.permlink;
+    postTitle = resolved.title;
+    resolvedFromUsername = true;
+  }
+
+  // Validate we have author and permlink
+  if (!author || !permlink) {
+    return errorResponse('Error: Either author+permlink or username is required');
+  }
+
   switch (params.action) {
     case 'vote':
       if (params.weight === undefined) {
         return errorResponse('Error: Weight is required for vote action (-10000 to 10000)');
       }
       return voteOnPost({
-        author: params.author,
-        permlink: params.permlink,
+        author,
+        permlink,
         weight: params.weight,
       });
     case 'reblog':
       return reblogPost({
-        author: params.author,
-        permlink: params.permlink,
+        author,
+        permlink,
       });
     case 'get_replies':
       return getContentReplies({
-        author: params.author,
-        permlink: params.permlink,
+        author,
+        permlink,
+        resolvedFromUsername,
+        postTitle,
       });
     case 'get_votes':
       return getActiveVotes({
-        author: params.author,
-        permlink: params.permlink,
+        author,
+        permlink,
+        resolvedFromUsername,
+        postTitle,
+        limit: params.limit,
+        offset: params.offset,
+        sort: params.sort,
       });
     case 'get_reblogged_by':
       return getRebloggedBy({
-        author: params.author,
-        permlink: params.permlink,
+        author,
+        permlink,
+        resolvedFromUsername,
+        postTitle,
       });
     default:
       return errorResponse(`Unknown action: ${params.action}`);
@@ -135,7 +219,12 @@ interface DiscussionEntry {
  * Get all replies/comments on a specific post
  */
 export async function getContentReplies(
-  params: { author: string; permlink: string }
+  params: { 
+    author: string; 
+    permlink: string;
+    resolvedFromUsername?: boolean;
+    postTitle?: string;
+  }
 ): Promise<Response> {
   try {
     const replies = await callCondenserApi<RawReply[]>(
@@ -158,8 +247,13 @@ export async function getContentReplies(
       url: `https://peakd.com/@${reply.author}/${reply.permlink}`,
     }));
 
+    const postUrl = `https://peakd.com/@${params.author}/${params.permlink}`;
+
     return successJson({
       post: `@${params.author}/${params.permlink}`,
+      post_title: params.postTitle || null,
+      post_url: postUrl,
+      ...(params.resolvedFromUsername && { resolved_from: 'latest post' }),
       reply_count: formattedReplies.length,
       replies: formattedReplies,
     });
@@ -170,9 +264,19 @@ export async function getContentReplies(
 
 /**
  * Get all votes on a specific post with voter details
+ * Supports sorting by vote size (default), time, or voter name
+ * Supports pagination via limit and offset
  */
 export async function getActiveVotes(
-  params: { author: string; permlink: string }
+  params: { 
+    author: string; 
+    permlink: string;
+    resolvedFromUsername?: boolean;
+    postTitle?: string;
+    limit?: number;
+    offset?: number;
+    sort?: 'size' | 'time' | 'voter';
+  }
 ): Promise<Response> {
   try {
     const votes = await callCondenserApi<RawVote[]>(
@@ -180,23 +284,71 @@ export async function getActiveVotes(
       [params.author, params.permlink]
     );
 
-    const formattedVotes: FormattedVote[] = votes.map((vote) => ({
+    // Calculate vote summary (before sorting/pagination)
+    const upvotes = votes.filter(v => v.weight > 0).length;
+    const downvotes = votes.filter(v => v.weight < 0).length;
+
+    // Sort votes based on sort parameter (default: by size/rshares)
+    const sortBy = params.sort || 'size';
+    const sortedVotes = [...votes].sort((a, b) => {
+      switch (sortBy) {
+        case 'size':
+          // Sort by absolute rshares value (largest first)
+          return Math.abs(Number(b.rshares)) - Math.abs(Number(a.rshares));
+        case 'time':
+          // Sort by time (newest first)
+          return new Date(b.time).getTime() - new Date(a.time).getTime();
+        case 'voter':
+          // Sort alphabetically by voter name
+          return a.voter.localeCompare(b.voter);
+        default:
+          return 0;
+      }
+    });
+
+    // Apply pagination
+    const limit = params.limit || 50;
+    const offset = params.offset || 0;
+    const paginatedVotes = sortedVotes.slice(offset, offset + limit);
+    const hasMore = (offset + limit) < sortedVotes.length;
+
+    // Format votes with percentage as human-readable
+    const formattedVotes = paginatedVotes.map((vote) => ({
       voter: vote.voter,
       weight: vote.weight,
-      percent: vote.percent,
+      percent: `${(vote.percent / 100).toFixed(2)}%`,
       time: formatDate(vote.time),
       rshares: String(vote.rshares),
     }));
 
-    // Calculate vote summary
-    const upvotes = votes.filter(v => v.weight > 0).length;
-    const downvotes = votes.filter(v => v.weight < 0).length;
+    // Get top voter by rshares for summary
+    const topVoter = sortedVotes.length > 0 
+      ? sortedVotes.reduce((max, v) => 
+          Math.abs(Number(v.rshares)) > Math.abs(Number(max.rshares)) ? v : max
+        )
+      : null;
+
+    const postUrl = `https://peakd.com/@${params.author}/${params.permlink}`;
 
     return successJson({
       post: `@${params.author}/${params.permlink}`,
+      post_title: params.postTitle || null,
+      post_url: postUrl,
+      ...(params.resolvedFromUsername && { resolved_from: 'latest post' }),
+      // Summary stats
       total_votes: votes.length,
       upvotes,
       downvotes,
+      top_voter: topVoter ? { 
+        voter: topVoter.voter, 
+        percent: `${(topVoter.percent / 100).toFixed(2)}%` 
+      } : null,
+      // Pagination info
+      sort: sortBy,
+      returned_count: formattedVotes.length,
+      offset,
+      has_more: hasMore,
+      // Vote list
       votes: formattedVotes,
     });
   } catch (error) {
@@ -208,7 +360,12 @@ export async function getActiveVotes(
  * Get list of accounts that reblogged a specific post
  */
 export async function getRebloggedBy(
-  params: { author: string; permlink: string }
+  params: { 
+    author: string; 
+    permlink: string;
+    resolvedFromUsername?: boolean;
+    postTitle?: string;
+  }
 ): Promise<Response> {
   try {
     const rebloggers = await callCondenserApi<string[]>(
@@ -221,8 +378,13 @@ export async function getRebloggedBy(
       account => account !== params.author
     );
 
+    const postUrl = `https://peakd.com/@${params.author}/${params.permlink}`;
+
     return successJson({
       post: `@${params.author}/${params.permlink}`,
+      post_title: params.postTitle || null,
+      post_url: postUrl,
+      ...(params.resolvedFromUsername && { resolved_from: 'latest post' }),
       reblog_count: actualRebloggers.length,
       reblogged_by: actualRebloggers,
     });
@@ -280,35 +442,59 @@ export async function getAccountNotifications(
 
 /**
  * Get full threaded discussion for a post (root post + all nested replies)
+ * Supports two modes:
+ * 1. author + permlink: Get discussion for a specific post
+ * 2. username: Get discussion for the user's latest post
  */
 export async function getDiscussion(
-  params: { author: string; permlink: string }
+  params: { author?: string; permlink?: string; username?: string }
 ): Promise<Response> {
   try {
+    // Resolve post identification
+    let author = params.author;
+    let permlink = params.permlink;
+    let resolvedFromUsername = false;
+
+    if (params.username && (!author || !permlink)) {
+      // Resolve username to their latest post
+      const resolved = await resolveLatestPost(params.username);
+      if (!resolved.success) {
+        return errorResponse(`Error: ${resolved.error}`);
+      }
+      author = resolved.author;
+      permlink = resolved.permlink;
+      resolvedFromUsername = true;
+    }
+
+    // Validate we have author and permlink
+    if (!author || !permlink) {
+      return errorResponse('Error: Either author+permlink or username is required');
+    }
+
     // Bridge API returns a map of author/permlink -> content
     const discussion = await callBridgeApi<Record<string, DiscussionEntry>>(
       'get_discussion',
-      { author: params.author, permlink: params.permlink }
+      { author, permlink }
     );
 
     if (!discussion || Object.keys(discussion).length === 0) {
-      return errorResponse(`Error: Discussion not found: @${params.author}/${params.permlink}`);
+      return errorResponse(`Error: Discussion not found: @${author}/${permlink}`);
     }
 
     // Convert the map to an array and organize by depth
     const entries = Object.values(discussion);
     
     // Find the root post
-    const rootKey = `${params.author}/${params.permlink}`;
+    const rootKey = `${author}/${permlink}`;
     const rootPost = discussion[rootKey];
     
     if (!rootPost) {
-      return errorResponse(`Error: Root post not found: @${params.author}/${params.permlink}`);
+      return errorResponse(`Error: Root post not found: @${author}/${permlink}`);
     }
 
     // Separate root from replies
     const replies = entries.filter(
-      e => !(e.author === params.author && e.permlink === params.permlink)
+      e => !(e.author === author && e.permlink === permlink)
     );
 
     // Sort replies by depth then by created date
@@ -333,7 +519,11 @@ export async function getDiscussion(
       url: `https://peakd.com/@${entry.author}/${entry.permlink}`,
     });
 
+    const postUrl = `https://peakd.com/@${author}/${permlink}`;
+
     return successJson({
+      ...(resolvedFromUsername && { resolved_from: 'latest post' }),
+      post_url: postUrl,
       root_post: formatEntry(rootPost),
       total_replies: replies.length,
       max_depth: replies.length > 0 ? Math.max(...replies.map(r => r.depth)) : 0,

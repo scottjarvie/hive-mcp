@@ -5,7 +5,7 @@
  * Purpose: Input validation for content replies, votes, notifications, discussions.
  * Key elements: contentEngagementSchema (consolidated)
  * Dependencies: zod
- * Last update: Tool consolidation - grouped related content engagement operations
+ * Last update: Added username support and vote pagination/sorting parameters
  */
 
 import { z } from 'zod';
@@ -17,15 +17,32 @@ import { z } from 'zod';
 /**
  * Consolidated schema for content engagement operations
  * Combines: vote, reblog, get_replies, get_votes, get_reblogged_by
+ * 
+ * Supports two modes:
+ * 1. author + permlink: Target a specific post
+ * 2. username: Target the user's latest post (auto-resolved)
  */
 export const contentEngagementSchema = z.object({
   action: z.enum(['vote', 'reblog', 'get_replies', 'get_votes', 'get_reblogged_by']).describe(
     'Action: vote, reblog, get_replies, get_votes, or get_reblogged_by'
   ),
-  author: z.string().describe('Author of the post'),
-  permlink: z.string().describe('Permlink of the post'),
+  // Post identification - either author+permlink OR username
+  author: z.string().optional().describe('Author of the post (or use username for latest post)'),
+  permlink: z.string().optional().describe('Permlink of the post (or use username for latest post)'),
+  username: z.string().optional().describe('Username to get engagement for their latest post (alternative to author+permlink)'),
+  // Vote-specific
   weight: z.number().min(-10000).max(10000).optional().describe(
     'Vote weight: -10000 (100% downvote) to 10000 (100% upvote). Required for vote action.'
+  ),
+  // Pagination/sorting for get_votes action
+  limit: z.number().min(1).max(100).optional().default(50).describe(
+    'Max votes to return (for get_votes, default 50)'
+  ),
+  offset: z.number().min(0).optional().default(0).describe(
+    'Pagination offset (for get_votes)'
+  ),
+  sort: z.enum(['size', 'time', 'voter']).optional().default('size').describe(
+    'Sort order for votes: size (largest first, default), time (newest first), voter (alphabetical)'
   ),
 });
 
@@ -59,9 +76,11 @@ export const getAccountNotificationsSchema = z.object({
 });
 
 // Schema for get_discussion tool
+// Supports two modes: author+permlink OR username (for latest post)
 export const getDiscussionSchema = z.object({
-  author: z.string().describe('Author of the root post'),
-  permlink: z.string().describe('Permlink of the root post'),
+  author: z.string().optional().describe('Author of the root post (or use username for latest post)'),
+  permlink: z.string().optional().describe('Permlink of the root post (or use username for latest post)'),
+  username: z.string().optional().describe('Username to get discussion for their latest post (alternative to author+permlink)'),
 });
 
 // Schema for update_post tool

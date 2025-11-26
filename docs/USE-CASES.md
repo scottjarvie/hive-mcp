@@ -207,65 +207,65 @@ These are **read-only operations** that anyone can perform without authenticatio
 #### 1.2.1 Trending posts by tag
 
 - **Prompt:** "What are the trending posts in the #photography tag on Hive?"
-- **Val:** 9.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `get_posts` (action: by_tag, category: trending, tag: photography). Returns comprehensive data: titles, authors, dates, votes, payouts, communities, excerpts, URLs. Excellent synthesis potential.
+- **Recommendation:** Keep
 
 #### 1.2.2 User's recent posts
 
 - **Prompt:** "Show me the recent posts from @peakd"
-- **Val:** 9.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `get_posts` (action: by_user, category: posts). Returns authored posts with titles, dates, votes, communities, excerpts. Clean separation of authored vs reblogged content.
+- **Recommendation:** Keep
 
 #### 1.2.3 Get single post
 
 - **Prompt:** "Get the full content of @jarvie's latest post"
-- **Val:** 9.0 | **Exp:** 8.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 8.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `get_posts` (action: get_latest_post). Returns full post content including body, metadata, community, tags, and URL. `get_latest_post` action is perfect for this use case.
+- **Recommendation:** Keep
 
 #### 1.2.4 Get post discussions
 
 - **Prompt:** "Show me all comments on @jarvie's latest post"
-- **Val:** 7.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 7.5 | **Exp:** 7.5 | **Res:** 8.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two-step workflow: 1) `get_posts` (get_latest_post) to find permlink, 2) `get_discussion` for full thread. Returns root post + all nested replies with depth tracking. Handled spam comments in results well.
+- **Recommendation:** Keep
 
 #### 1.2.5 Hot posts discovery
 
 - **Prompt:** "What are the hot posts in #gaming right now?"
-- **Val:** 8.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 8.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `get_posts` (action: by_tag, category: hot, tag: gaming). Returns 10 hot gaming posts including Splinterlands, Holozing, Escape from Tarkov content. Excellent data quality.
+- **Recommendation:** Keep
 
 #### 1.2.6 New posts by tag
 
 - **Prompt:** "Show me the newest posts tagged #hive"
-- **Val:** 8.0 | **Exp:** 9.0 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 8.0 | **Exp:** 9.0 | **Res:** 9.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** Single call to `get_posts` (action: by_tag, category: created, tag: hive). Returns very fresh posts (all within 1 hour of test). Diverse communities represented. Excellent real-time data.
+- **Recommendation:** Keep
 
 #### 1.2.7 Get votes on a post
 
 - **Prompt:** "Who voted on @jarvie's latest post?"
-- **Val:** 6.0 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 6.0 | **Exp:** 7.5 | **Res:** 8.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two-step workflow: 1) `get_posts` (get_latest_post) for permlink, 2) `content_engagement` (get_votes). Returns complete voter list with weight, percent, time, rshares. Very large response (550 voters, ~50KB).
+- **Recommendation:** Keep (consider pagination for large vote counts)
 
 #### 1.2.8 Who reblogged a post
 
 - **Prompt:** "Who has reblogged @peakd's latest post?"
-- **Val:** 5.5 | **Exp:** 7.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** \_
-- **Recommendation:** \_
+- **Val:** 5.5 | **Exp:** 7.5 | **Res:** 8.0 | **Tools:** 2 | **Status:** ✅
+- **Observations:** Two-step workflow: 1) `get_posts` (get_latest_post) for permlink, 2) `content_engagement` (get_reblogged_by). Returns clean reblog count (12) and list of accounts. Small, efficient response.
+- **Recommendation:** Keep
 
 #### 1.2.9 Search posts by author ⭐
 
 - **Prompt:** "Find all posts by @asgarth about photography"
-- **Val:** 9.0 | **Exp:** 3.5 | **Res:** _ | **Tools:** _ | **Status:** ⬜
-- **Observations:** MCP doesn't have text search capability
-- **Recommendation:** \_
+- **Val:** 9.0 | **Exp:** 3.5 | **Res:** 5.0 | **Tools:** 1 | **Status:** ✅
+- **Observations:** MCP lacks text search. Used `get_posts` (by_user) to get posts, then AI manually filtered by community (PhotoFeed, PhotoGames) and content. Found 6+ photography posts but required manual analysis. Works but not automated.
+- **Recommendation:** Enhance (add community/tag filter parameter, or note limitation clearly)
 
 ---
 
@@ -1258,12 +1258,12 @@ These are complex use cases combining multiple operations.
 
 | Section              | Total   | Tested | Avg Result |
 | -------------------- | ------- | ------ | ---------- |
-| 1. Hive L1 (No Keys) | 32      | 9      | 8.5        |
+| 1. Hive L1 (No Keys) | 32      | 18     | 8.4        |
 | 2. Hive L1 (Keys)    | 34      | 0      | -          |
 | 3. HE L2 (No Keys)   | 19      | 0      | -          |
 | 4. HE L2 (Keys)      | 16      | 0      | -          |
 | 5. Advanced          | 21      | 0      | -          |
-| **Total**            | **122** | **9**  | **8.5**    |
+| **Total**            | **122** | **18** | **8.4**    |
 
 ---
 
@@ -1320,4 +1320,4 @@ Tester: [name]
 ---
 
 _Last Updated: November 25, 2025_
-_Document Version: 3.1 - Updated testing methodology_
+_Document Version: 3.2 - Completed section 1.2 testing (9 tests)_
